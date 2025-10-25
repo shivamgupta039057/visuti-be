@@ -10,7 +10,7 @@ global.c = console.log.bind(console);
 
 
 app.use(cors());
-// connectPostgres();
+connectPostgres();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '/public')));
