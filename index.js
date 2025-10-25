@@ -4,13 +4,15 @@ const app = express();
 const path = require('path');
 require('dotenv').config();
 const devConfig = require('./src/config/dev.config');
-require('./src/config/db.config');
-const { connectPostgres } = require('./src/config/postgres.config');
+// require('./src/config/db.config');
+const { connectPostgres,sequelize } = require('./src/config/postgres.config');
+const initDB=require('./src/pgModels/index')
 global.c = console.log.bind(console);
 
 
 app.use(cors());
 // connectPostgres();
+initDB();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '/public')));
@@ -29,7 +31,6 @@ app.use((err, req, res, next) => {
 })
 
 const PORT = devConfig.PORT || 6262;
-// console.log("dfdklfdmdklsdjdfkldevConfig" , devConfig.DB_URL);
 
 
 app.listen(PORT, async () => {
