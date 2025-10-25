@@ -1,5 +1,3 @@
-
-
 module.exports = {
     APP_SHORT_NAME: process.env.APP_SHORT_NAME || 'Hugo',
     REDIS_HOST: "127.0.0.1",
@@ -8,8 +6,8 @@ module.exports = {
     PG_HOST: process.env.PG_HOST || 'localhost',
     PG_DB: process.env.PG_DB || 'visuti_userdb',
     PG_USER: process.env.PG_USER || 'postgres',
-    PG_DIALECT: process.env.PG_DIALECT || 'postgres',
-    PG_PASS: process.env.PG_PASS || 'visutiCarrer',
+    PG_PASS:'123',
+    // PG_PASS: process.env.PG_PASS || 'visutiCarrer',
 JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '1d',
     // EMAIL_CONFIG: {
     //     host: process.env.smshost,
