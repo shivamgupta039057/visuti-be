@@ -9,10 +9,11 @@ const { connectPostgres,sequelize } = require('./src/config/postgres.config');
 const initDB=require('./src/pgModels/index')
 global.c = console.log.bind(console);
 
-
+const seed = require("./src/seed/seedData");
 app.use(cors());
 // connectPostgres();
 initDB();
+// initDB().then(() => seed());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '/public')));
