@@ -20,7 +20,8 @@ const sequelize = new Sequelize(
 
   {
     host: devConfig.PG_HOST,
-    dialect: devConfig.PG_DIALECT,
+    dialect: "postgres",
+    port: 5432,
     logging: false,
   }
 );
