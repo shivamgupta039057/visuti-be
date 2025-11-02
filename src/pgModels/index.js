@@ -1,5 +1,10 @@
 const sequelize = require('../config/postgres.config')
-
+require("./roleModel");
+require("./permissionModel");
+require("./permissionTemplateModel");
+require("./userModel");
+require("./permissionTemplatePermissionModel");
+require("./rolePermission");
 const initDB = async () => {
     try {
         await sequelize.authenticate();
