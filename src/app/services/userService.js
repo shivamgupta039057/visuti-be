@@ -2,17 +2,18 @@ const { statusCode, resMessage } = require("../../config/default.json");
 const bcrypt = require("bcrypt");
 const Role = require("../../pgModels/roleModel");
 const PermissionTemplate = require("../../pgModels/permissionTemplateModel");
-const UserModel=require('../../pgModels/userModel')
+const UserModel = require('../../pgModels/userModel')
 const jwt = require("jsonwebtoken");
 
 
 exports.addUser = async (body) => {
   try {
-    
-     const { name, email, password, phone, roleId, permissionTemplateId ,initials} = body;
 
+    const { name, email, password, phone, roleId, permissionTemplateId, initials,reportingTo, reporteeIds  = [] } = body;
 
-      const existingUser = await UserModel.findOne({ where: { email } });
+    // console.log(body,"sssssssss")
+
+    const existingUser = await UserModel.findOne({ where: { email } });
     if (existingUser) {
       return {
         statusCode: statusCode.BAD_REQUEST,
@@ -22,36 +23,100 @@ exports.addUser = async (body) => {
     }
     const role = await Role.findByPk(roleId);
     if (!role) {
-      return res.status(400).json({ message: "Invalid roleId" });
+        return {
+          statusCode: statusCode.BAD_REQUEST,
+          success: false,
+          message: "Invalid roleId"
+        };
+   
     }
 
-  
+
     const permissionTemplate = await PermissionTemplate.findByPk(permissionTemplateId);
     if (!permissionTemplate) {
       return res.status(400).json({ message: "Invalid permissionTemplateId" });
     }
 
+  let manager = null;
+    if (reportingTo) {
+      manager = await UserModel.findByPk(reportingTo, { include: Role });
+      if (!manager) {
+        return {
+          statusCode: statusCode.BAD_REQUEST,
+          success: false,
+          message: "Invalid reportingTo (manager) id",
+        };
+      }
+
+      // Optional rule: Caller should report to Manager if reportingTo provided
+      if (role.roleName === "Caller" && manager.Role.roleName !== "Manager") {
+        return {
+          statusCode: statusCode.BAD_REQUEST,
+          success: false,
+          message: "Caller must report to a Manager if reportingTo is provided",
+        };
+      }
+
+      // Optional rule: Manager can report to another Manager if reportingTo provided
+      if (role.roleName === "Manager" && manager.Role.roleName !== "Manager") {
+        return {
+          statusCode: statusCode.BAD_REQUEST,
+          success: false,
+          message: "Manager must report to another Manager if reportingTo is provided",
+        };
+      }
+    }
+
+    // 5️⃣ Hash password
     const hashPassword = await bcrypt.hash(password, 10);
 
-    const user = await UserModel.create({
+    // 6️⃣ Create User
+    const newUser = await UserModel.create({
       name,
       email,
       initials,
       password: hashPassword,
       phone,
       roleId,
-      permissionTemplateId
+      permissionTemplateId,
+      reportingTo: manager ? manager.id : null,
     });
 
-
+    // 7️⃣ Optional Reportees assignment (Manager only, if provided)
+    if (role.roleName === "Manager" && Array.isArray(reporteeIds) && reporteeIds.length > 0) {
+      await UserModel.update(
+        { reportingTo: newUser.id },
+        { where: { id: reporteeIds } }
+      );
+    }
     return {
       statusCode: statusCode.OK,
       success: true,
-      message: "Add",
-      data: user,
+      message: "User created successfully",
+      data: newUser,
     };
+
+    // const hashPassword = await bcrypt.hash(password, 10);
+
+    // const user = await UserModel.create({
+    //   name,
+    //   email,
+    //   initials,
+    //   password: hashPassword,
+    //   phone,
+    //   roleId,
+    //   permissionTemplateId
+    // });
+
+
+    // return {
+    //   statusCode: statusCode.OK,
+    //   success: true,
+    //   message: "Add",
+    //   data: user,
+    // };
   } catch (error) {
-    console.log(error,"eeeeeeeee")
+    console.log(error, "eeeeeeeee")
     return {
       statusCode: statusCode.BAD_REQUEST,
       success: false,
@@ -60,25 +125,58 @@ exports.addUser = async (body) => {
   }
 };
 
-exports.getUserList = async () => {
+exports.getUserList = async (query) => {
   try {
     // Fetch all users with associated role and permission template
-    const users = await UserModel.findAll({
+    const {roleId}=query
+    const whereClause = roleId ? { roleId } : {};
+    // const users = await UserModel.findAll({
+    //   attributes: ['id', 'name', 'email', 'phone', 'createdAt', 'updatedAt'],
+    //   where:whereClause,
+    //   include: [
+    //     {
+    //       model: Role,
+    //       attributes: ['id', 'roleName'], // Only include role ID and roleName
+    //     },
+    //     {
+    //       model: PermissionTemplate,
+    //       attributes: ['id', 'templateName'], // Only include template ID and templateName
+    //     },
+    //   ],
+    //   order: [['createdAt', 'DESC']], // Optional: newest users first
+    // });
+
+    // Return formatted response
+   
+     const users = await UserModel.findAll({
       attributes: ['id', 'name', 'email', 'phone', 'createdAt', 'updatedAt'],
-      include: [
+      where: whereClause,
+       include: [
         {
           model: Role,
-          attributes: ['id', 'roleName'], // Only include role ID and roleName
+          attributes: ['id', 'roleName'],
         },
         {
           model: PermissionTemplate,
-          attributes: ['id', 'templateName'], // Only include template ID and templateName
+          attributes: ['id', 'templateName'],
+        },
+        {
+          model: UserModel, // Manager of this user
+          as: 'manager',   // must match self-association alias in model
+          attributes: ['id', 'name', 'email'],
+        },
+        {
+          model: UserModel, // Users reporting to this user (reportees)
+          as: 'reportees', // must match self-association alias in model
+          attributes: ['id', 'name', 'email'],
         },
       ],
-      order: [['createdAt', 'DESC']], // Optional: newest users first
+      order: [['createdAt', 'DESC']],
     });
 
-    // Return formatted response
+   
+   
+   
     return {
       statusCode: statusCode.OK,
       success: true,
@@ -99,8 +197,8 @@ exports.getUserList = async () => {
 
 exports.editUser = async (params, body) => {
   try {
-    const {id}=params
-    const { name, email, password, phone, roleId, permissionTemplateId,initials } = body;
+    const { id } = params
+    const { name, email, password, phone, roleId, permissionTemplateId, initials } = body;
 
     // ✅ Find the user first
     const user = await UserModel.findByPk(id);
@@ -153,7 +251,7 @@ exports.editUser = async (params, body) => {
     user.email = email || user.email;
     user.phone = phone || user.phone;
     user.roleId = roleId || user.roleId;
-    user.initials=initials||user.initials;
+    user.initials = initials || user.initials;
     user.permissionTemplateId = permissionTemplateId || user.permissionTemplateId;
 
     // ✅ If new password provided, hash it

@@ -13,11 +13,17 @@
     "bcrypt": {
         "saltRounds": 10
     },
+    "roleConsts": {
+        "Admin": "Admin",
+        "Manager": "Manager",
+        "Caller": "Caller",
+        "Marketing": "Marketing"
+    },
     "resMessage": {
         "Add_Home_Page_Data": "Homepage data added successfully",
-        "Add_Banner_Data" : "Banner data added successfully",
-        "Add_Neet_Feature" : "Neet Feature added successfully",
-        "Add_Neet_Product" : "Neet Product added successfully",
+        "Add_Banner_Data": "Banner data added successfully",
+        "Add_Neet_Feature": "Neet Feature added successfully",
+        "Add_Neet_Product": "Neet Product added successfully",
         "Update_Home_Page_Data": "Homepage data updated successfully",
         "REJECTION_REASON": "Please mention rejection reason",
         "Price_Set_Successfully": "Price Set Successfully",
