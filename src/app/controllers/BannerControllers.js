@@ -13,7 +13,6 @@ const { statusCode } = require('../../config/default.json');
  */
 exports.addBannerPage = async ({ body }) => {
   try {
-    console.log("bodybodybodybody",body);
     return await services.addBanner(body);
   } catch (error) {
     return {
