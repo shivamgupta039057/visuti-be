@@ -21,9 +21,11 @@ const User = sequelize.define("User", {
   }
 });
 
-User.belongsTo(Role, { foreignKey: "roleId" });
-User.belongsTo(PermissionTemplate, { foreignKey: "permissionTemplateId" });
+User.belongsTo(Role, { foreignKey: "roleId" ,as: 'role' });
+Role.hasMany(User, { foreignKey: 'roleId', as: 'users' });
 
+User.belongsTo(PermissionTemplate, { foreignKey: "permissionTemplateId",as: 'template' });
+PermissionTemplate.hasMany(User, { foreignKey: 'permissionTemplateId', as: 'users' });
 // Self-referencing association for manager/reportees
 
 

@@ -9,7 +9,7 @@ const jwt = require("jsonwebtoken");
 exports.addUser = async (body) => {
   try {
 
-    const { name, email, password, phone, roleId, permissionTemplateId, initials,reportingTo, reporteeIds  = [] } = body;
+    const { name, email, password, phone, roleId, permissionTemplateId, initials, reportingTo, reporteeIds = [] } = body;
 
     // console.log(body,"sssssssss")
 
@@ -23,12 +23,12 @@ exports.addUser = async (body) => {
     }
     const role = await Role.findByPk(roleId);
     if (!role) {
-        return {
-          statusCode: statusCode.BAD_REQUEST,
-          success: false,
-          message: "Invalid roleId"
-        };
-   
+      return {
+        statusCode: statusCode.BAD_REQUEST,
+        success: false,
+        message: "Invalid roleId"
+      };
+
     }
 
 
@@ -37,7 +37,7 @@ exports.addUser = async (body) => {
       return res.status(400).json({ message: "Invalid permissionTemplateId" });
     }
 
-  let manager = null;
+    let manager = null;
     if (reportingTo) {
       manager = await UserModel.findByPk(reportingTo, { include: Role });
       if (!manager) {
@@ -128,7 +128,7 @@ exports.addUser = async (body) => {
 exports.getUserList = async (query) => {
   try {
     // Fetch all users with associated role and permission template
-    const {roleId}=query
+    const { roleId } = query
     const whereClause = roleId ? { roleId } : {};
     // const users = await UserModel.findAll({
     //   attributes: ['id', 'name', 'email', 'phone', 'createdAt', 'updatedAt'],
@@ -147,17 +147,19 @@ exports.getUserList = async (query) => {
     // });
 
     // Return formatted response
-   
-     const users = await UserModel.findAll({
+
+    const users = await UserModel.findAll({
       attributes: ['id', 'name', 'email', 'phone', 'createdAt', 'updatedAt'],
       where: whereClause,
-       include: [
+      include: [
         {
           model: Role,
+          as: 'role',
           attributes: ['id', 'roleName'],
         },
         {
           model: PermissionTemplate,
+          as: 'template',
           attributes: ['id', 'templateName'],
         },
         {
@@ -174,9 +176,9 @@ exports.getUserList = async (query) => {
       order: [['createdAt', 'DESC']],
     });
 
-   
-   
-   
+
+
+
     return {
       statusCode: statusCode.OK,
       success: true,
