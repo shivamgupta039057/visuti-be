@@ -26,7 +26,6 @@ exports.uploadFile = (req, res, next) => {
         console.log(error)
     }
 }
-
 exports.deleteFile = ({ imageName, folderName }) => {
     if (imageName) fs.unlinkSync(path.join(__dirname, "../../public/uploads/", folderName, imageName))
 }

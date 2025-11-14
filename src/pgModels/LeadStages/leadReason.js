@@ -22,7 +22,8 @@ const LeadReason = sequelize.define("lead_reasons", {
   },
   order: {
     type: DataTypes.INTEGER,
-    allowNull: true, // for drag-and-drop order
+    allowNull: true, // for drag-and-drop order,
+    defaultValue : 0
   },
   is_active: {
     type: DataTypes.BOOLEAN,

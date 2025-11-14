@@ -155,11 +155,40 @@ exports.deleteLeadStage = async (params) => {
 
 exports.createLeadStatus = async (body) => {
   console.log("createLeadStatuscreateLeadStatus" , body); 
-  
-  const { name, ...rest } = body;
-try {
-  const leadStatusCreate = await Leadstatus.create(body);
-  const leadstatus = await Leadstatus.findByPk(leadStatusCreate.id); // get the lead status with the id
+  try {
+  const { stage_id, name, color } = body;
+  const existingStatus = await Leadstatus.findOne({
+    where: {
+      stage_id,
+      name: {
+        [Op.iLike]: name
+      }
+    },
+  });
+  if (existingStatus) {
+    return {
+      statusCode: statusCode.BAD_REQUEST,
+      success: false,
+      message: `Status "${name}" already exists in this stage`,
+    };
+  }
+  const maxOrderStatus = await Leadstatus.findOne({
+    where: { stage_id },
+    order: [["order", "DESC"]],
+    attributes: ["order"],
+  });
+  const nextOrder = maxOrderStatus ? maxOrderStatus.order + 1 : 1;
+  console.log("maxOrderStatusmaxOrderStatus" , nextOrder);
+  // const leadStatusCreate = await Leadstatus.create(body);
+  const leadStatusCreate = await Leadstatus.create({
+    stage_id,
+    name,
+    color,
+    order: nextOrder,
+  });
+  const leadstatus = await Leadstatus.findByPk(leadStatusCreate.id, {
+    attributes: ["id", "name", "order", "color", "is_active", "stage_id"],
+  });
   const leadstatusdata = leadstatus ? {
     id: leadstatus.id,
     name: leadstatus.name,
@@ -229,6 +258,8 @@ exports.updateLeadStatus = async (params, body) => {
       data: updatedStage,
     };
   } catch (error) {
+    console.log("errorerror" , error);
+    
     return {
       statusCode: statusCode.BAD_REQUEST,
       success: false,
@@ -267,32 +298,69 @@ exports.deleteLeadStatus = async (params) => {
 
 
 exports.createReasonStatus = async (body) => {
-  console.log("createLeadStatuscreateLeadStatus" , body); 
-  
-  const { reason, ...rest } = body;
-try {
-  const leadStatusCreate = await Leadreason.create(body);
-  const leadstatus = await Leadreason.findByPk(leadStatusCreate.id); // get the lead status with the id
-  const leadstatusdata = leadstatus ? {
-    id: leadstatus.id,
-    name: leadstatus.name,
-    order: leadstatus.order,
-    color: leadstatus.color,
-    is_active: leadstatus.is_active,
-  } : null;
-  return {
-    statusCode: statusCode.OK,
-    success: true,
-    message: resMessage.Add_LEAD_FIELD_Data,
-    data: leadstatusdata || null ,
+  console.log("createReasonStatus", body);
+  try {
+    const { status_id, reason } = body;
+
+    // Check for duplicate reason in the same status
+    const existingReason = await Leadreason.findOne({
+      where: {
+        status_id,
+        reason: {
+          [Op.iLike]: reason
+        }
+      },
+    });
+
+    if (existingReason) {
+      return {
+        statusCode: statusCode.BAD_REQUEST,
+        success: false,
+        message: `Reason "${reason}" already exists for this status`,
+      };
+    }
+
+    // Get max order for the given status_id
+    const maxOrderReason = await Leadreason.findOne({
+      where: { status_id },
+      order: [["order", "DESC"]],
+      attributes: ["order"],
+    });
+    const nextOrder = maxOrderReason ? maxOrderReason.order + 1 : 1;
+
+    // Create the lead reason
+    const leadReasonCreate = await Leadreason.create({
+      status_id,
+      reason,
+      order: nextOrder,
+    });
+
+    // Fetch the created lead reason
+    const leadReason = await Leadreason.findByPk(leadReasonCreate.id, {
+      attributes: ["id", "status_id", "reason", "order", "is_active"],
+    });
+
+    const reasonData = leadReason ? {
+      id: leadReason.id,
+      status_id: leadReason.status_id,
+      reason: leadReason.reason,
+      order: leadReason.order,
+      is_active: leadReason.is_active,
+    } : null;
+
+    return {
+      statusCode: statusCode.OK,
+      success: true,
+      message: resMessage.Add_LEAD_FIELD_Data,
+      data: reasonData || null,
     };
-} catch (error) {
-  return {
-    statusCode: statusCode.BAD_REQUEST,
-    success: false,
-    message: error.message,
-  };
-}
+  } catch (error) {
+    return {
+      statusCode: statusCode.BAD_REQUEST,
+      success: false,
+      message: error.message,
+    };
+  }
 };
 
 exports.getAllReasonStatuses = async (query) => {

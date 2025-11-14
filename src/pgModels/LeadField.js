@@ -40,9 +40,14 @@ const LeadField = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    icon: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     order: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      defaultValue: 0
     },
     is_active: {
       type: DataTypes.BOOLEAN,

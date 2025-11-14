@@ -52,3 +52,14 @@ exports.deleteLeadFieldController = async ({ params }) => {
   }
 };
 
+exports.reorderLeadFieldController = async ({ query }) => {
+  try {
+    return await services.reorderLeadField(query);
+  } catch (error) {
+    return {
+      statusCode: statusCode.BAD_REQUEST,
+      success: false,
+      message: error.message,
+    };
+  }
+};

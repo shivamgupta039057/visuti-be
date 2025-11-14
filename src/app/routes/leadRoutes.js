@@ -8,7 +8,11 @@ const upload = require('../../helper/multer');
 const { uploadFile } = require("../../helper/fileUploader");
 
 router.post('/addLead', validate(leadValidation), responseHandler(controller.createLead));
-router.get('/getAllLeads' , responseHandler(controller.generateLead))
+router.get('/getAllLeads' , responseHandler(controller.generateLead));
+router.post('/changeleadStatus/:leadId' , responseHandler(controller.changeLeadStatus));
+router.post('/lead-bulk-upload', upload.single('file'), uploadFile, responseHandler(controller.bulkUploadLeads));
+router.get('/stage-status-structure' , responseHandler(controller.getStageStatusStructure));
+
 
 module.exports = router;
 

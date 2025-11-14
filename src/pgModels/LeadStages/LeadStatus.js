@@ -27,6 +27,7 @@ const LeadStatus = sequelize.define("lead_statuses", {
   order: {
     type: DataTypes.INTEGER,
     allowNull: true, // // for drag-and-drop order
+    defaultValue: 0
   },
   is_default: {
     type: DataTypes.BOOLEAN,

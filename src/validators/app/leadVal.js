@@ -2,19 +2,15 @@ const { Joi } = require('express-validation');
 const { col } = require('sequelize');
 
 exports.leadValidation = Joi.object({
-    data: Joi.object({
-      name: Joi.string().trim().required(),
-      email: Joi.string().email().optional(),
-      phone: Joi.string().trim().required(),
-      city : Joi.string().trim().required()
-    }).required(),
+    data: Joi.object().unknown(true).required(),
     source: Joi.string().trim().required(),
     notes: Joi.string().trim().optional(),
   });
   
 
 // Joi validation schema for LeadField model
-exports.leadFieldValidation = Joi.object({
+exports.
+leadFieldValidation = Joi.object({
     lable: Joi.string().trim().required(),
     type: Joi.string().valid(
         "checkbox",
@@ -35,6 +31,7 @@ exports.leadFieldValidation = Joi.object({
             order: Joi.number().integer().optional()
         })
     ).optional(),
+    icon: Joi.string().allow(null, "").required(),
     is_required: Joi.boolean().optional(),
     order: Joi.number().integer().optional(),
     is_active: Joi.boolean().optional(),
@@ -53,15 +50,11 @@ exports.leadStageValidation = Joi.object({
 exports.leadStatusValidation = Joi.object({
     stage_id: Joi.number().required(),
     name: Joi.string().trim().required(),
-    order: Joi.number().integer().required(),
     color: Joi.string().allow(null, "").optional(),
-    is_active: Joi.boolean().default(true).optional(),
 });
 
 // Joi validation schema for LeadReason model
 exports.leadReasonValidation = Joi.object({
     status_id: Joi.number().required(),
     reason: Joi.string().trim().required(),
-    order: Joi.number().integer().required(),
-    is_active: Joi.boolean().default(true).optional(),
 });

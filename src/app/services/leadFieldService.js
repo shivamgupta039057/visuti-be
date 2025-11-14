@@ -30,8 +30,19 @@ exports.createLeadField = async (body) => {
     }
 
     const name = lable.toLowerCase().trim().replace(/\s+/g, "_");
-    const leadfiled = await leadfield.create({ ...rest, lable, name });
+    
+    
+     const maxOrderStatus = await leadfield.findOne({
+     order: [["order", "DESC"]],
+     attributes: ["order"],
+    });
+    console.log("maxOrderStatusmaxOrderStatus" , maxOrderStatus);
+    const nextOrder = maxOrderStatus ? maxOrderStatus.order + 1 : 1;
 
+   
+
+    const leadfiled = await leadfield.create({ ...rest, lable, name , order: nextOrder });
+    
     return {
       statusCode: statusCode.OK,
       success: true,
@@ -104,6 +115,29 @@ exports.deleteLeadField = async (params) => {
       success: true,
       message: resMessage.DELETE_LEAD_FIELD_Data,
       data: updatefield,
+    };
+  } catch (error) {
+    return {
+      statusCode: statusCode.BAD_REQUEST,
+      success: false,
+      message: error.message,
+    };
+  }
+};
+
+
+exports.reorderLeadField = async (query) => {
+  const { page = 1, limit = 10} = query;
+  try {
+    const leadsName = await leadfield.findAll({ 
+      attributes: ['lable'], 
+      order: [["order", "ASC"]] 
+    });
+    return {
+      statusCode: statusCode.OK,
+      success: true,
+      message: resMessage.GET_RECODE_LIST_DATA,
+      data: leadsName,
     };
   } catch (error) {
     return {
