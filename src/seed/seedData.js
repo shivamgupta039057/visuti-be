@@ -7,6 +7,7 @@ const PermissionTemplatePermission = require("../pgModels/permissionTemplatePerm
 const seed = async () => {
   // Roles
   const roles = await Role.bulkCreate([
+    {roleName:"Root"},
     { roleName: "Admin" },
     { roleName: "Manager" },
     { roleName: "Caller" },
@@ -14,21 +15,21 @@ const seed = async () => {
   ]);
 
   // Permissions
-  const permissions = await Permission.bulkCreate([
-    { name: "user.create" },
-    { name: "user.view" },
-    { name: "leads.add" },
-    { name: "leads.view" },
-    { name: "dashboard.view" },
-  ]);
+  // const permissions = await Permission.bulkCreate([
+  //   { name: "user.create" },
+  //   { name: "user.view" },
+  //   { name: "leads.add" },
+  //   { name: "leads.view" },
+  //   { name: "dashboard.view" },
+  // ]);
 
   // Permission Templates
-  const templates = await PermissionTemplate.bulkCreate([
-    { templateName: "Default Admin Permissions" },
-    { templateName: "Default Manager Permissions" },
-    { templateName: "Default Caller Permissions" },
-    { templateName: "Default Marketing Permissions" },
-  ]);
+  // const templates = await PermissionTemplate.bulkCreate([
+  //   { templateName: "Default Admin Permissions" },
+  //   { templateName: "Default Manager Permissions" },
+  //   { templateName: "Default Caller Permissions" },
+  //   { templateName: "Default Marketing Permissions" },
+  // ]);
 
   // Admin → all permissions
 //   for (let perm of permissions) {

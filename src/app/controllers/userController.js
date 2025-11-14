@@ -32,9 +32,9 @@ exports.addUser = async ({body}) => {
  * @returns {Object} - The response object containing status code, success flag, and message.
  * @throws Will throw an error if login fails.
  */
-exports.getUserList = async ({body}) => {
+exports.getUserList = async ({query}) => {
   try {
-    return await services.getUserList(body);
+    return await services.getUserList(query);
   } catch (error) {
     return {
       statusCode: statusCode.BAD_REQUEST,

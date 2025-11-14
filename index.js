@@ -6,7 +6,7 @@ require('dotenv').config();
 const devConfig = require('./src/config/dev.config');
 // require('./src/config/db.config');
 const { connectPostgres,sequelize } = require('./src/config/postgres.config');
-const initDB=require('./src/pgModels/index');
+const {initDB}=require('./src/pgModels/index')
 global.c = console.log.bind(console);
 const seed = require("./src/seed/seedData");
 app.use(cors());
