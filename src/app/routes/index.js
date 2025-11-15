@@ -12,5 +12,3 @@ module.exports = (app) => {
   app.use(`${apiV1Prefix}/role`, require("../routes/roleRoute"));
   app.use(`${apiV1Prefix}/permission`, require("../routes/permissionRoute"));
 };
- 
-
