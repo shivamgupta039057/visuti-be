@@ -298,10 +298,11 @@ exports.loginUser = async (body) => {
     // ✅ Find user by email
     const user = await UserModel.findOne({
       where: { email },
-      include: [
-        { model: Role, attributes: ["id", "roleName"] },
-        { model: PermissionTemplate, attributes: ["id", "templateName"] },
-      ],
+
+        include: [
+    { model: Role, as: 'role', attributes: ["id", "roleName"] },
+    { model: PermissionTemplate, as: 'template', attributes: ["id", "templateName"] },
+  ],
     });
 
     if (!user) {
@@ -348,6 +349,61 @@ exports.loginUser = async (body) => {
     };
   } catch (error) {
     console.log(error, "loginUser error");
+    return {
+      statusCode: statusCode.BAD_REQUEST,
+      success: false,
+      message: error.message,
+    };
+  }
+};
+
+
+exports.getProfileList = async (query, user) => {
+  try {
+    // Fetch the profile of the currently authenticated user
+    const userProfile = await UserModel.findOne({
+      attributes: ['id', 'name', 'email', 'initials', 'phone', 'createdAt', 'updatedAt'],
+      where: { id: user.id },
+      include: [
+        {
+          model: Role,
+          as: 'role',
+          attributes: ['id', 'roleName'],
+        },
+        {
+          model: PermissionTemplate,
+          as: 'template',
+          attributes: ['id', 'templateName'],
+        },
+        {
+          model: UserModel, // Manager of this user
+          as: 'manager',   // must match self-association alias in model
+          attributes: ['id', 'name', 'email'],
+        },
+        {
+          model: UserModel, // Users reporting to this user (reportees)
+          as: 'reportees', // must match self-association alias in model
+          attributes: ['id', 'name', 'email'],
+        },
+      ],
+    });
+
+    if (!userProfile) {
+      return {
+        statusCode: statusCode.NOT_FOUND,
+        success: false,
+        message: "User profile not found",
+      };
+    }
+
+    return {
+      statusCode: statusCode.OK,
+      success: true,
+      message: "User profile fetched successfully",
+      data: userProfile,
+    };
+  } catch (error) {
+    console.log(error, "getProfileList error");
     return {
       statusCode: statusCode.BAD_REQUEST,
       success: false,

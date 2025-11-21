@@ -10,6 +10,8 @@ const {addUserVal } = require("../../validators/app/userVal");
 router.post('/addUser' ,validate(addUserVal), responseHandler(controllers.addUser ));
 router.get('/getUser',responseHandler(controllers.getUserList))
 router.post('/editUser/:id',responseHandler(controllers.editUser))
-router.post('/login',responseHandler(controllers.login))
+router.post('/login',responseHandler(controllers.login));
+router.get('/profile', auth, responseHandler(controllers.getProfile));
+
 
 module.exports = router;

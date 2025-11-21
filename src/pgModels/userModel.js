@@ -18,7 +18,15 @@ const User = sequelize.define("User", {
    reportingTo: {           // 👈 allow empty "Reporting To"
     type: DataTypes.INTEGER,
     allowNull: true,
-  }
+  },
+  isDeleted: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  isBlocked: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
 });
 
 User.belongsTo(Role, { foreignKey: "roleId" ,as: 'role' });

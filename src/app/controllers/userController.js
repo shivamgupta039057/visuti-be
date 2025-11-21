@@ -77,3 +77,17 @@ exports.login = async ({body}) => {
     };
   }
 };
+
+
+exports.getProfile = async ({query, user}) => {
+  try {
+    return await services.getProfileList(query , user);
+  } catch (error) {
+    return {
+      statusCode: statusCode.BAD_REQUEST,
+      success: false,
+      message: error.message,
+    };
+  }
+};
+
