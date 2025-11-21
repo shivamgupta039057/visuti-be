@@ -15,22 +15,22 @@ const fs = require('fs');
  * @throws Will throw an error if there is a database error.
  */
 exports.addLead = async (body) => {
-  console.log("sdssadsasdsbodybodybodybody" , body);
-  
+  console.log("sdssadsasdsbodybodybodybody", body);
+
   try {
     const { data, source, assignedTo, notes } = body;
-    
-   const status = await LeadStatus.findOne({ where: { is_default: true } });
 
-   console.log("statusstatusstatusstatus" , status);
-   
+    const status = await LeadStatus.findOne({ where: { is_default: true } });
 
-   const lead = await Lead.create({
-     data,
-     source,
-     status_id: status ? status.id : null,
-     notes,
-   }); 
+    console.log("statusstatusstatusstatus", status);
+
+
+    const lead = await Lead.create({
+      data,
+      source,
+      status_id: status ? status.id : null,
+      notes,
+    });
 
 
     return {
@@ -52,33 +52,175 @@ exports.addLead = async (body) => {
 };
 
 
+
+// exports.getAllLeads = async (query) => {
+//   console.log("sdssadsasdsbodybodybodybody" , query);
+
+//   try {
+//     // const leads = await Lead.findAll({
+//     //   attributes: {
+//     //     exclude: ["assignedTo", "stage_id" , "reason_id" , "created_by"]
+//     //   },
+//     //   include: [
+//     //     { model: LeadStatus, as: "status", attributes: ["name", "color"] }
+//     //   ],
+//     //   order: [["createdAt", "DESC"]],
+//     // });
+//  const {
+//       searchField,   // e.g. "name", "email", "city"
+//       searchText,    // e.g. "sunil"
+//       statusIds,     // e.g. "1,2,3"
+//       assignees,     // e.g. "Anshul,Rohit"
+//       startDate,     // for custom
+//       endDate ,       // for custom
+//       filters = []  // dynamic UI filters
+//     } = query;
+
+//     let whereClause = {};
+
+//     // -----------------------------------------
+//     // 1️⃣ SEARCH FILTER (Dynamic JSONB Fields)
+//     // -----------------------------------------
+//     if (searchField && searchText) {
+//       whereClause = {
+//         ...whereClause,
+//         data: {
+//           [Op.contains]: {
+//             [searchField]: searchText
+//           }
+//         }
+//       };
+//     }
+
+//     // -----------------------------------------
+//     // 2️⃣ MULTIPLE STATUS FILTER
+//     // -----------------------------------------
+//     if (statusIds) {
+//       const statusArray = statusIds.split(",").map(Number);
+//       whereClause.status_id = { [Op.in]: statusArray };
+//     }
+
+//     // -----------------------------------------
+//     // 3️⃣ MULTIPLE ASSIGNEE FILTER
+//     // -----------------------------------------
+//     if (assignees) {
+//       const assigneeArray = assignees.split(",");
+//       whereClause.assignedTo = { [Op.in]: assigneeArray };
+//     }
+
+//     // -----------------------------------------
+//     // 4️⃣ DATE FILTERS
+//     // -----------------------------------------
+//     const now = new Date();
+//     let start, end;
+
+//     switch (dateRange) {
+//       case "today":
+//         start = new Date(now.setHours(0, 0, 0, 0));
+//         end = new Date();
+//         break;
+
+//       case "yesterday":
+//         start = new Date(now.setDate(now.getDate() - 1));
+//         start.setHours(0, 0, 0, 0);
+//         end = new Date(start);
+//         end.setHours(23, 59, 59, 999);
+//         break;
+
+//       case "this_week":
+//         start = new Date(now.setDate(now.getDate() - now.getDay()));
+//         start.setHours(0, 0, 0, 0);
+//         end = new Date();
+//         break;
+
+//       case "last_week":
+//         start = new Date(now.setDate(now.getDate() - now.getDay() - 7));
+//         start.setHours(0, 0, 0, 0);
+//         end = new Date(now.setDate(start.getDate() + 6));
+//         end.setHours(23, 59, 59, 999);
+//         break;
+
+//       case "this_month":
+//         start = new Date(now.getFullYear(), now.getMonth(), 1);
+//         end = new Date();
+//         break;
+
+//       case "last_month":
+//         start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+//         end = new Date(now.getFullYear(), now.getMonth(), 0);
+//         break;
+
+//       case "custom":
+//         if (startDate && endDate) {
+//           start = new Date(startDate);
+//           end = new Date(endDate);
+//         }
+//         break;
+//     }
+
+//     if (start && end) {
+//       whereClause.createdAt = { [Op.between]: [start, end] };
+//     }
+
+
+//     // -----------------------------------------
+//     // 📌 FETCH LEADS
+//     // -----------------------------------------
+// const leads = await Lead.findAll({
+//   where: whereClause,
+//   attributes: {
+//     exclude: ["assignedTo", "stage_id", "reason_id", "created_by"]
+//   },
+//   include: [
+//     { model: LeadStatus, as: "status", attributes: ["name", "color"] }
+//   ],
+//   order: [["createdAt", "DESC"]],
+// });
+
+//     console.log("leadsleadsleads" , leads);
+
+
+//     return {
+//       statusCode: statusCode.OK,
+//       success: true,
+//       message: `${leads.length == 0 ? resMessage.NO_DATA_FOUND : resMessage.GET_LEAD_FIELD_Data }`,
+//       data: leads,
+//     };
+//   } catch (error) {
+//     return {
+//       statusCode: statusCode.BAD_REQUEST,
+//       success: false,
+//       message: error.message,
+//     };
+//   }
+// };
+
 exports.getAllLeads = async (query) => {
-  console.log("sdssadsasdsbodybodybodybody" , query);
-  
   try {
-    // const leads = await Lead.findAll({
-    //   attributes: {
-    //     exclude: ["assignedTo", "stage_id" , "reason_id" , "created_by"]
-    //   },
-    //   include: [
-    //     { model: LeadStatus, as: "status", attributes: ["name", "color"] }
-    //   ],
-    //   order: [["createdAt", "DESC"]],
-    // });
- const {
-      searchField,   // e.g. "name", "email", "city"
-      searchText,    // e.g. "sunil"
-      statusIds,     // e.g. "1,2,3"
-      assignees,     // e.g. "Anshul,Rohit"
-      dateRange,     // today | yesterday | this_week | last_week | this_month | last_month | custom
-      startDate,     // for custom
-      endDate        // for custom
+    // Eample of query->    {
+    //   "statusIds": "1,3",
+    //   "assignees": "Shivam,Anuj",
+    //   "startDate": 1737456000000,
+    //   "endDate": 1738020000000,
+    //   "filters": [
+    //     { "field": "name", "operator": "contains", "value": "test" },
+    //     { "field": "leadRating", "operator": "in", "value": [4,5] }
+    //   ]
+    // }
+    const {
+      searchField,
+      searchText,
+      statusIds,
+      assignees,
+      startDate,   // timestamp from frontend
+      endDate,     // timestamp from frontend
+      filters = [] // dynamic filters
     } = query;
 
     let whereClause = {};
 
     // -----------------------------------------
-    // 1️⃣ SEARCH FILTER (Dynamic JSONB Fields)
+    // 1️⃣ SEARCH TEXT FIELD (KEEP)
     // -----------------------------------------
     if (searchField && searchText) {
       whereClause = {
@@ -92,7 +234,7 @@ exports.getAllLeads = async (query) => {
     }
 
     // -----------------------------------------
-    // 2️⃣ MULTIPLE STATUS FILTER
+    // 2️⃣ STATUS FILTER (KEEP)
     // -----------------------------------------
     if (statusIds) {
       const statusArray = statusIds.split(",").map(Number);
@@ -100,7 +242,7 @@ exports.getAllLeads = async (query) => {
     }
 
     // -----------------------------------------
-    // 3️⃣ MULTIPLE ASSIGNEE FILTER
+    // 3️⃣ ASSIGNEE FILTER (KEEP)
     // -----------------------------------------
     if (assignees) {
       const assigneeArray = assignees.split(",");
@@ -108,62 +250,60 @@ exports.getAllLeads = async (query) => {
     }
 
     // -----------------------------------------
-    // 4️⃣ DATE FILTERS
+    // 4️⃣ TIMESTAMP DATE FILTER 
     // -----------------------------------------
-    const now = new Date();
-    let start, end;
+    if (startDate && endDate) {
+      const start = new Date(Number(startDate));
+      const end = new Date(Number(endDate));
 
-    switch (dateRange) {
-      case "today":
-        start = new Date(now.setHours(0, 0, 0, 0));
-        end = new Date();
-        break;
+      // Ensure end covers the full day
+      end.setHours(23, 59, 59, 999);
 
-      case "yesterday":
-        start = new Date(now.setDate(now.getDate() - 1));
-        start.setHours(0, 0, 0, 0);
-        end = new Date(start);
-        end.setHours(23, 59, 59, 999);
-        break;
-
-      case "this_week":
-        start = new Date(now.setDate(now.getDate() - now.getDay()));
-        start.setHours(0, 0, 0, 0);
-        end = new Date();
-        break;
-
-      case "last_week":
-        start = new Date(now.setDate(now.getDate() - now.getDay() - 7));
-        start.setHours(0, 0, 0, 0);
-        end = new Date(now.setDate(start.getDate() + 6));
-        end.setHours(23, 59, 59, 999);
-        break;
-
-      case "this_month":
-        start = new Date(now.getFullYear(), now.getMonth(), 1);
-        end = new Date();
-        break;
-
-      case "last_month":
-        start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        end = new Date(now.getFullYear(), now.getMonth(), 0);
-        break;
-
-      case "custom":
-        if (startDate && endDate) {
-          start = new Date(startDate);
-          end = new Date(endDate);
-        }
-        break;
-    }
-
-    if (start && end) {
       whereClause.createdAt = { [Op.between]: [start, end] };
     }
-  
 
     // -----------------------------------------
-    // 📌 FETCH LEADS
+    // 5️⃣ DYNAMIC UI FILTERS
+    // -----------------------------------------
+    const operatorMap = {
+      equal: Op.eq,
+      not_equal: Op.ne,
+      contains: Op.substring,
+      not_contains: Op.notLike,
+      begins_with: Op.startsWith,
+      not_begins_with: Op.notILike,
+      in: Op.in,
+      not_in: Op.notIn,
+      between: Op.between,
+      is_empty: "IS_EMPTY",
+      is_not_empty: "IS_NOT_EMPTY"
+    };
+
+    filters.forEach(filter => {
+      const { field, operator, value } = filter;
+      const sequelizeOperator = operatorMap[operator];
+      if (!sequelizeOperator) return;
+
+      if (sequelizeOperator === "IS_EMPTY") {
+        whereClause[field] = { [Op.or]: [null, ""] };
+      } else if (sequelizeOperator === "IS_NOT_EMPTY") {
+        whereClause[field] = { [Op.ne]: null };
+      } else if (sequelizeOperator === Op.between) {
+        whereClause[field] = {
+          [Op.between]: [
+            new Date(Number(value[0])),
+            new Date(Number(value[1]))
+          ]
+        };
+      } else if (Array.isArray(value)) {
+        whereClause[field] = { [sequelizeOperator]: value };
+      } else {
+        whereClause[field] = { [sequelizeOperator]: value };
+      }
+    });
+
+    // -----------------------------------------
+    // 6️⃣ FINAL DB QUERY
     // -----------------------------------------
     const leads = await Lead.findAll({
       where: whereClause,
@@ -176,23 +316,21 @@ exports.getAllLeads = async (query) => {
       order: [["createdAt", "DESC"]],
     });
 
-    console.log("leadsleadsleads" , leads);
-    
 
     return {
-      statusCode: statusCode.OK,
       success: true,
-      message: `${leads.length == 0 ? resMessage.NO_DATA_FOUND : resMessage.GET_LEAD_FIELD_Data }`,
-      data: leads,
+      message: leads.length ? "Leads fetched successfully" : "No data found",
+      data: leads
     };
+
   } catch (error) {
     return {
-      statusCode: statusCode.BAD_REQUEST,
       success: false,
-      message: error.message,
+      message: error.message
     };
   }
 };
+
 
 exports.changeStatus = async (body, params) => {
   try {
@@ -328,8 +466,8 @@ exports.leadUpload = async (body) => {
 
     // Bulk create leads
     const createdLeads = [];
-    console.log("leadsDataleadsData" , leadsData);
-    
+    console.log("leadsDataleadsData", leadsData);
+
     for (const leadObj of leadsData) {
       const lead = await Lead.create({
         data: leadObj !== undefined ? leadObj : null,
