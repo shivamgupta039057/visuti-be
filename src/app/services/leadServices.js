@@ -1,5 +1,6 @@
 const { statusCode, resMessage } = require("../../config/default.json");
 const Lead = require("../../pgModels/lead");
+const { Op } = require("sequelize");
 const LeadStage = require("../../pgModels/LeadStages/LeadStage");
 const LeadStatus = require("../../pgModels/LeadStages/leadStatus");
 const XLSX = require('xlsx');
@@ -55,9 +56,119 @@ exports.getAllLeads = async (query) => {
   console.log("sdssadsasdsbodybodybodybody" , query);
   
   try {
+    // const leads = await Lead.findAll({
+    //   attributes: {
+    //     exclude: ["assignedTo", "stage_id" , "reason_id" , "created_by"]
+    //   },
+    //   include: [
+    //     { model: LeadStatus, as: "status", attributes: ["name", "color"] }
+    //   ],
+    //   order: [["createdAt", "DESC"]],
+    // });
+ const {
+      searchField,   // e.g. "name", "email", "city"
+      searchText,    // e.g. "sunil"
+      statusIds,     // e.g. "1,2,3"
+      assignees,     // e.g. "Anshul,Rohit"
+      dateRange,     // today | yesterday | this_week | last_week | this_month | last_month | custom
+      startDate,     // for custom
+      endDate        // for custom
+    } = query;
+
+    let whereClause = {};
+
+    // -----------------------------------------
+    // 1️⃣ SEARCH FILTER (Dynamic JSONB Fields)
+    // -----------------------------------------
+    if (searchField && searchText) {
+      whereClause = {
+        ...whereClause,
+        data: {
+          [Op.contains]: {
+            [searchField]: searchText
+          }
+        }
+      };
+    }
+
+    // -----------------------------------------
+    // 2️⃣ MULTIPLE STATUS FILTER
+    // -----------------------------------------
+    if (statusIds) {
+      const statusArray = statusIds.split(",").map(Number);
+      whereClause.status_id = { [Op.in]: statusArray };
+    }
+
+    // -----------------------------------------
+    // 3️⃣ MULTIPLE ASSIGNEE FILTER
+    // -----------------------------------------
+    if (assignees) {
+      const assigneeArray = assignees.split(",");
+      whereClause.assignedTo = { [Op.in]: assigneeArray };
+    }
+
+    // -----------------------------------------
+    // 4️⃣ DATE FILTERS
+    // -----------------------------------------
+    const now = new Date();
+    let start, end;
+
+    switch (dateRange) {
+      case "today":
+        start = new Date(now.setHours(0, 0, 0, 0));
+        end = new Date();
+        break;
+
+      case "yesterday":
+        start = new Date(now.setDate(now.getDate() - 1));
+        start.setHours(0, 0, 0, 0);
+        end = new Date(start);
+        end.setHours(23, 59, 59, 999);
+        break;
+
+      case "this_week":
+        start = new Date(now.setDate(now.getDate() - now.getDay()));
+        start.setHours(0, 0, 0, 0);
+        end = new Date();
+        break;
+
+      case "last_week":
+        start = new Date(now.setDate(now.getDate() - now.getDay() - 7));
+        start.setHours(0, 0, 0, 0);
+        end = new Date(now.setDate(start.getDate() + 6));
+        end.setHours(23, 59, 59, 999);
+        break;
+
+      case "this_month":
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        end = new Date();
+        break;
+
+      case "last_month":
+        start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        end = new Date(now.getFullYear(), now.getMonth(), 0);
+        break;
+
+      case "custom":
+        if (startDate && endDate) {
+          start = new Date(startDate);
+          end = new Date(endDate);
+        }
+        break;
+    }
+
+    if (start && end) {
+      whereClause.createdAt = { [Op.between]: [start, end] };
+    }
+  
+
+    // -----------------------------------------
+    // 📌 FETCH LEADS
+    // -----------------------------------------
     const leads = await Lead.findAll({
+      where: whereClause,
       attributes: {
-        exclude: ["assignedTo", "stage_id" , "reason_id" , "created_by"]
+        exclude: ["assignedTo", "stage_id", "reason_id", "created_by"]
       },
       include: [
         { model: LeadStatus, as: "status", attributes: ["name", "color"] }

@@ -298,10 +298,11 @@ exports.loginUser = async (body) => {
     // ✅ Find user by email
     const user = await UserModel.findOne({
       where: { email },
-      include: [
-        { model: Role, attributes: ["id", "roleName"] },
-        { model: PermissionTemplate, attributes: ["id", "templateName"] },
-      ],
+
+        include: [
+    { model: Role, as: 'role', attributes: ["id", "roleName"] },
+    { model: PermissionTemplate, as: 'template', attributes: ["id", "templateName"] },
+  ],
     });
 
     if (!user) {
