@@ -5,6 +5,8 @@ const sequelize = require('../config/postgres.config')
 // require("./userModel");
 // require("./permissionTemplatePermissionModel");
 // require("./rolePermission");
+require('./workflowRulesModel');
+
 
 
 
