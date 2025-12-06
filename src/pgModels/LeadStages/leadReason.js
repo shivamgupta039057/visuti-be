@@ -41,5 +41,4 @@ LeadReason.belongsTo(LeadStatus, {
   as: "status",
 });
 
-
 module.exports = LeadReason;

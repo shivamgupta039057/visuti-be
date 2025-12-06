@@ -15,7 +15,7 @@ const Lead = sequelize.define(
     data: {
       type: DataTypes.JSONB,
       allowNull: true,  // store form data dynamically
-    },
+    },    
     source: {
       type: DataTypes.STRING, 
       allowNull: true,
