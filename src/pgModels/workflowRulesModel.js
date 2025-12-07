@@ -1,6 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/postgres.config");
-const Lead = require('./lead'); // Import Lead model
+const LeadStatus = require('./LeadStages/leadStatus'); // Import LeadStatus model
 const WorkFlowQueue = require('./workflowQueueModel');
 
 // models/WorkflowRules.js
@@ -8,12 +8,16 @@ const WorkFlowQueue = require('./workflowQueueModel');
 const WorkflowRules = sequelize.define("WorkflowRules", {
     id: { 
         type: DataTypes.INTEGER, 
-        
+        primaryKey: true,
         autoIncrement: true 
     },
     Status_id: { 
         type: DataTypes.INTEGER, 
-        allowNull: false 
+        allowNull: false,
+        references: {
+            model: LeadStatus,
+            key: "id",
+        }
     },
     ActionType: { 
         type: DataTypes.STRING,
@@ -42,9 +46,9 @@ const WorkflowRules = sequelize.define("WorkflowRules", {
 
 // Associations
 
-// Associate WorkflowRules to Lead via Status_id
-WorkflowRules.belongsTo(Lead, { foreignKey: "Status_id", targetKey: "status_id", as: "leads" }); 
-Lead.hasMany(WorkflowRules, { foreignKey: "Status_id", sourceKey: "status_id", as: "workflowRules" });
+// Associate WorkflowRules to LeadStatus via Status_id
+WorkflowRules.belongsTo(LeadStatus, { foreignKey: "Status_id", as: "status" }); 
+LeadStatus.hasMany(WorkflowRules, { foreignKey: "Status_id", as: "workflowRules" });
 
 // // WorkflowRules to WorkFlowQueue relation
 // WorkflowRules.hasMany(WorkFlowQueue, { foreignKey: "workflow_ruleID" });

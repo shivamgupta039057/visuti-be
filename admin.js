@@ -1,8 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
+const path = require('path');
+require('dotenv').config();
+const devConfig = require('./src/config/dev.config');
+const { connectPostgres, sequelize } = require('./src/config/postgres.config');
+const { initDB } = require('./src/pgModels/index');
 
 app.use(cors());
+// Initialize database
+initDB();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '/public')));
@@ -20,7 +27,7 @@ app.use((err, req, res, next) => {
     return res.status(400).json({ status: false, message: "Error In Request", data: [] })
 })
 
-const PORT = devConfig.PORT || 6262;
+const PORT = devConfig.ADMINPORT || 6161;
 
 app.listen(PORT, async () => {
     console.log(`Server is running on ${PORT}`);

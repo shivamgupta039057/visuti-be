@@ -27,7 +27,6 @@ exports.createWorkFlow = async (body) => {
     const exists = await WorkflowRules.findOne({
       where: { Status_id, ActionType },
     });
-    hhhhhddggddgdgggdddgggqqqqqq
     if (exists) {
       return {
         statusCode: statusCode.BAD_REQUEST,
@@ -35,7 +34,6 @@ exports.createWorkFlow = async (body) => {
         message: "Workflow rule with this Status and ActionType already exists.",
       };
     }
-    
 
     const createdRule = await WorkflowRules.create({
       Status_id,
