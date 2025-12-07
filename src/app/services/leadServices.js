@@ -332,6 +332,8 @@ exports.getAllLeads = async (query) => {
 };
 
 
+const WorkflowRules = require("../../pgModels/workflowRulesModel"); // Make sure to require the WorkflowRules model if not already at the top
+
 exports.changeStatus = async (body, params) => {
   try {
     const { leadId } = params;
@@ -345,8 +347,8 @@ exports.changeStatus = async (body, params) => {
       };
     }
 
+    // Check if the lead exists
     const leadData = await Lead.findByPk(leadId);
-
     if (!leadData) {
       return {
         statusCode: statusCode.NOT_FOUND,
@@ -355,10 +357,10 @@ exports.changeStatus = async (body, params) => {
       };
     }
 
+    // Check if the new status is valid
     const status = await LeadStatus.findByPk(statusId, {
       include: [{ model: LeadStage, as: "stage" }],
     });
-
     if (!status) {
       return {
         statusCode: statusCode.NOT_FOUND,
@@ -367,6 +369,18 @@ exports.changeStatus = async (body, params) => {
       };
     }
 
+    // Workflow: check if this status has any workflow rules
+    const workflowRule = await WorkflowRules.findOne({
+      where: { Status_id: statusId },
+    });
+    console.log("workflowRuleworkflowRuleworkflowRule" , workflowRule);
+    
+    if (workflowRule && workflowRule.action_data) {
+      // If a template ("action_data") is present, console.log it
+      console.log("Workflow Template for this status:", workflowRule.action_data);
+    }
+
+    // Update the lead with new status and stage
     await leadData.update({
       status_id: status.id,
       stage_id: status.stage_id,
