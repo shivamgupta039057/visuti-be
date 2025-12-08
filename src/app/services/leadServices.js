@@ -3,6 +3,8 @@ const Lead = require("../../pgModels/lead");
 const { Op } = require("sequelize");
 const LeadStage = require("../../pgModels/LeadStages/LeadStage");
 const LeadStatus = require("../../pgModels/LeadStages/leadStatus");
+const WorkflowRules = require("../../pgModels/workflowRulesModel"); // Make sure to require the WorkflowRules model if not already at the top
+const WorkFlowQueue = require("../../pgModels/workflowQueueModel");
 const XLSX = require('xlsx');
 const path = require("path");
 const fs = require('fs');
@@ -332,7 +334,7 @@ exports.getAllLeads = async (query) => {
 };
 
 
-const WorkflowRules = require("../../pgModels/workflowRulesModel"); // Make sure to require the WorkflowRules model if not already at the top
+
 
 exports.changeStatus = async (body, params) => {
   try {
@@ -373,11 +375,34 @@ exports.changeStatus = async (body, params) => {
     const workflowRule = await WorkflowRules.findOne({
       where: { Status_id: statusId },
     });
-    console.log("workflowRuleworkflowRuleworkflowRule" , workflowRule);
-    
+
+    // If a workflow rule with template exists: log the template, add/update queue
     if (workflowRule && workflowRule.action_data) {
-      // If a template ("action_data") is present, console.log it
+      // Console the template
       console.log("Workflow Template for this status:", workflowRule.action_data);
+
+      // Find if there is already an entry in the queue for this (lead, workflowRule)
+      let queueEntry = await WorkFlowQueue.findOne({
+        where: {
+          lead_id: leadId,
+          workflow_ruleID: workflowRule.id,
+        }
+      });
+
+      if (queueEntry) {
+        // Update the status to 'processing'
+        await queueEntry.update({
+          Status: 'executed',
+          executed_At: null
+        });
+      } else {
+        // Create an entry in queue with 'processing' status for this lead and workflow rule
+        await WorkFlowQueue.create({
+          lead_id: leadId,
+          workflow_ruleID: workflowRule.id,
+          Status: "processing"
+        });
+      }
     }
 
     // Update the lead with new status and stage

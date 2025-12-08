@@ -72,7 +72,7 @@ function log(filename, error, request, response) {
 
         // If the log file directory for 3 days ago exists, delete it
         if (fs.existsSync(oldFolder)) {
-            fs.rmdir(oldFolder, { recursive: true }, (err) => {
+            fs.rm(oldFolder, { recursive: true }, (err) => {
                 if (err) {
                     console.error('Error occurred while deleting folder:', err);
                 }
