@@ -29,7 +29,7 @@ exports.getLeadFieldsController = async ({ query }) => {
 exports.updateLeadFieldController = async ({ params , body }) => {
 
   try {
-    return await services.updateLeadFieldController(params , body);
+    return await services.updateLeadFieldServices(params , body);
   } catch (error) {
     return {
       statusCode: statusCode.BAD_REQUEST,
