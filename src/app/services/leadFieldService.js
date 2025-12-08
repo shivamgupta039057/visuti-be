@@ -86,6 +86,8 @@ exports.updateLeadFieldController = async (params , body) => {
         where: { id: id },
       }
     );
+    console.log("djdjdjddjupdatefieldupdatefieldupdatefieldupdatefield" , updatefield);
+    
     return {
       statusCode: statusCode.OK,
       success: true,
