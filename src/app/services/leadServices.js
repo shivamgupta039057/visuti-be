@@ -34,6 +34,37 @@ exports.addLead = async (body) => {
       notes,
     });
 
+          const workflowRule = await WorkflowRules.findOne({
+        where: { type:"ManualLead" },
+      });
+
+      if (workflowRule && workflowRule.action_data) {
+        console.log(
+          "Workflow Template for this status:",
+          workflowRule.action_data
+        );
+
+ 
+        // Check for existing queue entry
+        let queueEntry = await WorkFlowQueue.findOne({
+          where: {
+            workflow_ruleID: workflowRule.id,
+          },
+        });
+
+        if (queueEntry) {
+          await queueEntry.update({
+            Status: "executed",
+            executed_At: null,
+          });
+        } else {
+          await WorkFlowQueue.create({
+            lead_id: lead_id,
+            workflow_ruleID: workflowRule.id,
+            Status: "processing",
+          });
+        }
+      }
 
     return {
       statusCode: statusCode.OK,

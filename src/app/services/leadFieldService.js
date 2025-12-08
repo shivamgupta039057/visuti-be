@@ -89,23 +89,9 @@ exports.updateLeadFieldServices = async (params , body) => {
       }
     );
 
-
-     if (body.status_id) {
-      const statusId = body.status_id;
-
-      // Validate the status
-      const status = await LeadStatus.findByPk(statusId);
-      if (!status) {
-        return {
-          statusCode: statusCode.NOT_FOUND,
-          success: false,
-          message: "Invalid status_id",
-        };
-      }
-
       // Check workflow rules
       const workflowRule = await WorkflowRules.findOne({
-        where: { Status_id: statusId },
+        where: { Status_id: id },
       });
 
       if (workflowRule && workflowRule.action_data) {
@@ -138,7 +124,7 @@ exports.updateLeadFieldServices = async (params , body) => {
           });
         }
       }
-    }
+    
 
 
     return {

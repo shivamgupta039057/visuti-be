@@ -11,6 +11,9 @@ const WorkflowRules = sequelize.define("WorkflowRules", {
         primaryKey: true,
         autoIncrement: true 
     },
+    type:{
+        type:DataTypes.STRING
+    },
     Status_id: { 
         type: DataTypes.INTEGER, 
         allowNull: false,
