@@ -1,7 +1,9 @@
 const { statusCode, resMessage } = require("../../config/default.json");
 // const Lead = require("../../pgModels/lead");
 const leadfield = require("../../pgModels/leadField");
-
+const LeadStatus = require("../../pgModels/LeadStages/leadStatus");
+const WorkflowRules = require("../../pgModels/workflowRulesModel"); // Make sure to require the WorkflowRules model if not already at the top
+const WorkFlowQueue = require("../../pgModels/workflowQueueModel");
 /**
  * Add or update dynamic home page services according to schema.
  *
@@ -77,7 +79,7 @@ exports.getAllLeadFields = async (query) => {
   }
 };
 
-exports.updateLeadFieldController = async (params , body) => {
+exports.updateLeadFieldServices = async (params , body) => {
   const { id } = params;
   try {
     const updatefield = await leadfield.update(
@@ -86,8 +88,58 @@ exports.updateLeadFieldController = async (params , body) => {
         where: { id: id },
       }
     );
-    console.log("djdjdjddjupdatefieldupdatefieldupdatefieldupdatefield" , updatefield);
-    
+
+     if (body.status_id) {
+      const statusId = body.status_id;
+
+      // Validate the status
+      const status = await LeadStatus.findByPk(statusId);
+      if (!status) {
+        return {
+          statusCode: statusCode.NOT_FOUND,
+          success: false,
+          message: "Invalid status_id",
+        };
+      }
+
+      // Check workflow rules
+      const workflowRule = await WorkflowRules.findOne({
+        where: { Status_id: statusId },
+      });
+
+      if (workflowRule && workflowRule.action_data) {
+        console.log(
+          "Workflow Template for this status:",
+          workflowRule.action_data
+        );
+
+        // Find the related lead_id from leadfield
+        const leadFieldRecord = await leadfield.findByPk(id);
+        const lead_id = leadFieldRecord.id; // assuming leadfield table has lead_id
+
+        // Check for existing queue entry
+        let queueEntry = await WorkFlowQueue.findOne({
+          where: {
+            workflow_ruleID: workflowRule.id,
+          },
+        });
+
+        if (queueEntry) {
+          await queueEntry.update({
+            Status: "executed",
+            executed_At: null,
+          });
+        } else {
+          await WorkFlowQueue.create({
+            lead_id: lead_id,
+            workflow_ruleID: workflowRule.id,
+            Status: "processing",
+          });
+        }
+      }
+    }
+
+
     return {
       statusCode: statusCode.OK,
       success: true,
