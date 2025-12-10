@@ -13,3 +13,16 @@ exports.createWorkFlowController = async ({ body }) => {
     };
   }
 };
+
+
+exports.getWorkFlowController = async ({ query }) => {
+  try {
+    return await services.getWorkFlow(query);
+  } catch (error) {
+    return {
+      statusCode: statusCode.BAD_REQUEST,
+      success: false,
+      message: error.message,
+    };
+  }
+};

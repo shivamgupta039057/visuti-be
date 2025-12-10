@@ -1,5 +1,5 @@
 const { statusCode, resMessage } = require("../../config/default.json");
-const WorkflowRules = require("../../pgModels/workflowRulesModel");
+const {  LeadStatus,WorkflowRules,} = require("../../pgModels/index");
 
 /**
  * Create a new workflow rule.
@@ -54,6 +54,31 @@ exports.createWorkFlow = async (body) => {
       statusCode: statusCode.BAD_REQUEST,
       success: false,
       message: error.message,
+    };
+  }
+};
+
+
+exports.getWorkFlow = async () => {
+  try {
+    const rules = await WorkflowRules.findAll({
+      include: [
+        { model: LeadStatus, as: "status", attributes: ["id", "name"] }
+      ],
+      order: [["id", "DESC"]]
+    });
+
+    return {
+      statusCode: statusCode.OK,
+      success: true,
+      message: "Workflow rules fetched successfully",
+      data: rules
+    };
+  } catch (error) {
+    return {
+      statusCode: statusCode.BAD_REQUEST,
+      success: false,
+      message: error.message
     };
   }
 };

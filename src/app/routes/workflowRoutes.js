@@ -8,7 +8,7 @@ const upload = require('../../helper/multer');
 const { uploadFile } = require("../../helper/fileUploader");
 
 router.post('/addWorkflow',responseHandler(controller.createWorkFlowController));
-
+router.get('/getWorkFlow',responseHandler(controller.getWorkFlowController))
 
 module.exports = router;
 
