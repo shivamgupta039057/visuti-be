@@ -1,16 +1,12 @@
 const sequelize = require('../config/postgres.config')
-// require("./roleModel");
-// require("./permissionModel");
-// require("./permissionTemplateModel");
-// require("./userModel");
-// require("./permissionTemplatePermissionModel");
-// require("./rolePermission");
-require('./workflowRulesModel');
+const insertDefaultLeadFields = require("../seed/leadFieldDefaults");
+
 
 const LeadStage = require("./LeadStages/LeadStage");
 const LeadStatus = require("./LeadStages/LeadStatus");
 const WorkflowRules = require("./workflowRulesModel");
 const WorkFlowQueue = require("./workflowQueueModel");
+const LeadField=require('./LeadField')
 
 
 const RoleModel = require('./roleModel');
@@ -44,13 +40,18 @@ const initDB = async () => {
         console.log('Pg DataBase connected successfully');
 
         await sequelize.sync({ alter: true });
+
+        // Call the default fields seeder ONCE
+        await insertDefaultLeadFields(LeadField);
         console.log("Table synced successfully")
     } catch (err) {
         console.log("Database connection Failed", err)
     }
 }
 
-module.exports = { initDB, sequelize, RoleModel, PermissionTemplateModel, UserModel,  LeadStage,
-  LeadStatus,
-  WorkflowRules,
-  WorkFlowQueue }
+module.exports = {
+    initDB, sequelize, RoleModel, PermissionTemplateModel, UserModel, LeadStage,
+    LeadStatus,
+    WorkflowRules,
+    WorkFlowQueue,LeadField
+}
