@@ -39,14 +39,14 @@ const LeadStatus = sequelize.define("lead_statuses", {
   },
 }, { timestamps: true, tableName: "lead_statuses" });
 
-LeadStage.hasMany(LeadStatus, {
-  foreignKey: "stage_id",
-  as: "statuses",
-});
-LeadStatus.belongsTo(LeadStage, {
-  foreignKey: "stage_id",
-  as: "stage",
-});
+// LeadStage.hasMany(LeadStatus, {
+//   foreignKey: "stage_id",
+//   as: "statuses",
+// });
+// LeadStatus.belongsTo(LeadStage, {
+//   foreignKey: "stage_id",
+//   as: "stage",
+// });
 
 module.exports = LeadStatus;
 

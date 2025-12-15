@@ -12,4 +12,6 @@ module.exports = (app) => {
   app.use(`${apiV1Prefix}/role`, require("../routes/roleRoute"));
   app.use(`${apiV1Prefix}/permission`, require("../routes/permissionRoute"));
   app.use(`${apiV1Prefix}/workflow`, require("../routes/workflowRoutes"));
+  app.use(`${apiV1Prefix}/whatsapp`, require("../routes/whatsappRoutes"));
+
 };
