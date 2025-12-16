@@ -4,21 +4,39 @@ const insertDefaultLeadFields = require("../seed/leadFieldDefaults");
 
 const LeadStage = require("./LeadStages/LeadStage");
 const LeadStatus = require("./LeadStages/LeadStatus");
+const LeadReason = require("./LeadStages/LeadReason");
+
+const Lead = require("./Lead");
+
 const WorkflowRules = require("./workflowRulesModel");
 const WorkFlowQueue = require("./workflowQueueModel");
-const LeadField=require('./LeadField')
 
+const LeadField = require("./LeadField");
 
-const RoleModel = require('./roleModel');
-const PermissionTemplateModel = require('./permissionTemplateModel');
-const UserModel = require('./userModel');
+const RoleModel = require("./roleModel");
+const PermissionTemplateModel = require("./permissionTemplateModel");
+const UserModel = require("./userModel");
 
+// WhatsApp Models
+const WhatsAppMessage = require("./whatsAppMessageModel");
+const WebhookLog = require("./WebhookLogModel");
 
 
 
 /* LeadStage → LeadStatus */
 LeadStage.hasMany(LeadStatus, { foreignKey: "stage_id", as: "statuses" });
 LeadStatus.belongsTo(LeadStage, { foreignKey: "stage_id", as: "stage" });
+
+
+// LeadStatus → LeadReason (1 → M)
+LeadStatus.hasMany(LeadReason, {
+  foreignKey: "status_id",
+  as: "reasons",
+});
+LeadReason.belongsTo(LeadStatus, {
+  foreignKey: "status_id",
+  as: "status",
+});
 
 /* LeadStatus → WorkflowRules */
 LeadStatus.hasMany(WorkflowRules, { foreignKey: "Status_id", as: "workflowRules" });
@@ -27,6 +45,32 @@ WorkflowRules.belongsTo(LeadStatus, { foreignKey: "Status_id", as: "status" });
 /* WorkflowRules → WorkflowQueue */
 WorkflowRules.hasMany(WorkFlowQueue, { foreignKey: "workflow_ruleID", as: "queueEntries" });
 WorkFlowQueue.belongsTo(WorkflowRules, { foreignKey: "workflow_ruleID", as: "workflowRule" });
+
+/* ----------------- LEAD RELATIONS ----------------- */
+
+// Lead → LeadStage (M → 1)
+Lead.belongsTo(LeadStage, {
+  foreignKey: "stage_id",
+  as: "stage",
+});
+
+// Lead → LeadStatus (M → 1)
+Lead.belongsTo(LeadStatus, {
+  foreignKey: "status_id",
+  as: "status",
+});
+
+// Lead → LeadReason (M → 1)
+Lead.belongsTo(LeadReason, {
+  foreignKey: "reason_id",
+  as: "reason",
+});
+
+
+
+// Lead → WhatsAppMessage
+Lead.hasMany(WhatsAppMessage, { foreignKey: "lead_id", as: "messages" });
+WhatsAppMessage.belongsTo(Lead, { foreignKey: "lead_id", as: "lead" });
 
 
 // Role <-> PermissionTemplate (1:1)
@@ -52,6 +96,6 @@ const initDB = async () => {
 module.exports = {
     initDB, sequelize, RoleModel, PermissionTemplateModel, UserModel, LeadStage,
     LeadStatus,
-    WorkflowRules,
-    WorkFlowQueue,LeadField
+    WorkflowRules,LeadReason,Lead,
+    WorkFlowQueue,LeadField,WhatsAppMessage,WebhookLog
 }

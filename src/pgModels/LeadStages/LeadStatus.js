@@ -1,6 +1,5 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../../config/postgres.config");
-const LeadStage = require("./LeadStage");
 
 const LeadStatus = sequelize.define("lead_statuses", {
   id: {
