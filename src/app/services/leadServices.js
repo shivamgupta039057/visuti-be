@@ -2,7 +2,7 @@ const { statusCode, resMessage } = require("../../config/default.json");
 const Lead = require("../../pgModels/lead");
 const { Op } = require("sequelize");
 const LeadStage = require("../../pgModels/LeadStages/LeadStage");
-const LeadStatus = require("../../pgModels/LeadStages/leadStatus");
+const {LeadStatus} = require("../../pgModels");
 const WorkflowRules = require("../../pgModels/workflowRulesModel"); // Make sure to require the WorkflowRules model if not already at the top
 const WorkFlowQueue = require("../../pgModels/workflowQueueModel");
 const XLSX = require("xlsx");
@@ -360,6 +360,7 @@ exports.getAllLeads = async (query) => {
 
 exports.changeStatus = async (body, params) => {
   try {
+    let dataTemp;
     const { leadId } = params;
     const { statusId } = body;
 
@@ -370,11 +371,6 @@ exports.changeStatus = async (body, params) => {
         message: "lead_id and status_id are required",
       };
     }
-   
-    
-
-
-
     // Check if the lead exists
     const leadData = await Lead.findByPk(leadId);
     if (!leadData) {
@@ -384,8 +380,6 @@ exports.changeStatus = async (body, params) => {
         message: "Lead not found",
       };
     }
-    
-
     // Check if the new status is valid and has an associated stage
     const status = await LeadStatus.findByPk(statusId, {
       include: [{ model: LeadStage, as: "stage" }],
@@ -413,7 +407,11 @@ exports.changeStatus = async (body, params) => {
 
     // Optionally pass both lead and new status for potential logic
     if (typeof OnLeadStatusChange === "function") {
-      await OnLeadStatusChange(leadData, status);
+      console.log("Calling OnLeadStatusChange function...");
+       dataTemp = await OnLeadStatusChange(leadData, statusId);
+      
+    } else {
+      console.log("OnLeadStatusChange is not a function:", typeof OnLeadStatusChange);
     }
 
     // Update the lead with new status and stage
@@ -432,6 +430,7 @@ exports.changeStatus = async (body, params) => {
       message:
         resMessage.LEAD_STATUS_UPDATED || "Lead status updated successfully",
       data: updatedLead,
+      dataTemp      
     };
   } catch (error) {
     return {

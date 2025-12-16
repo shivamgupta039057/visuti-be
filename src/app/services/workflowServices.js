@@ -94,7 +94,6 @@ exports.saveWorkFlow = async (body) => {
     const { name, nodes, edges } = body;
     console.log("namenodesedgesnamenodesedgesnamenodesedgesnamenodesedges" , name, nodes, edges );
     
-
     // Check for required fields
     if (!name || !nodes || !Array.isArray(nodes) || nodes.length === 0) {
       return {
@@ -121,7 +120,7 @@ exports.saveWorkFlow = async (body) => {
       await WorkflowNode.create({
         WorkflowId: workflow.id, // Sequelize: referenced as modelName + Id
         node_id: node.id,
-        node_type: node.data?.type,      // EVENT / ACTION
+        node_type: node.data?.type,      // EVENT / ACTION /  condition / delay
         action_type: node.data?.sub,     // Lead Status / WhatsApp or similar
         data: node.data,
         position: node.position

@@ -1,8 +1,12 @@
 // const sendWhatsAppTemplate = require('../services/sendWhatsAppTemplate');
 
-async function executeNode(node, lead) {
-  if (node.action_type === "whatsapp") {
-    const templateName = node.data.template_name;
+module.exports = async function executeNode(node, lead) {
+  console.log("node,leadnode,leadnode,lead" , node, lead);
+  console.log("node.data.selectedData.label" , node.data.selectedData.label);
+  
+  
+  if (node.action_type === "Templates") {
+    const templateName = node.data.selectedData.label;
 
     console.log('Preparing to send WhatsApp template with the following data:');
     console.log('Recipient (to):', lead.whatsapp_number);
@@ -24,7 +28,7 @@ async function executeNode(node, lead) {
     // await sendWhatsAppTemplate(payload);
 
     console.log('WhatsApp template sent successfully');
+
+    return payload;
   }
 }
-
-module.exports = executeNode;
