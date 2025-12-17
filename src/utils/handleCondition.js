@@ -1,7 +1,7 @@
-const { traverse } = require("./traverse");
-
-export async function handleCondition(node, lead) {
-  const { field, operator, value } = node.data;
+const traverse = require("./traverse");
+const WorkflowEdge = require("../pgModels/workflow/workflowEdge.model");
+module.exports = async function handleCondition(node, lead, visited) {
+  const { field, operator, value } = node.data || {};
 
   let result = false;
 
@@ -12,16 +12,20 @@ export async function handleCondition(node, lead) {
     case "not_equals":
       result = lead[field] !== value;
       break;
+
+    case "contains":
+      result = (lead[field] || "").includes(value);
+      break;
   }
 
   const edge = await WorkflowEdge.findOne({
     where: {
-      source_node_id: node.node_id,
+      source: node.node_id,
       condition: result ? "YES" : "NO"
     }
   });
 
   if (edge) {
-    await traverse(edge.target_node_id, lead);
+    await traverse(edge.target, lead);
   }
 }

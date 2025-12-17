@@ -1,69 +1,45 @@
-async function executeAction(node, lead) {
-  if (!node || node.node_type?.toLowerCase() !== "action") return;
+const onLeadStatusChange = require("./onLeadStatusChange");
+// const sendWhatsAppMessage = require("../services/whatsapp");
 
+module.exports = async function executeAction(node, lead) {
   switch (node.action_type) {
 
-    // =============================
-    // 1. SEND WHATSAPP MESSAGE
-    // =============================
+    // ================== WHATSAPP ==================
     case "whatsapp": {
-      const { template_id, language = "en", variables = [] } = node.data || {};
+      const { template_id, variables } = node.data || {};
 
-      if (!template_id) {
-        console.error("WhatsApp template_id missing");
-        return;
-      }
+      console.log("📲 Sending WhatsApp to", lead.phone);
 
-      await sendWhatsAppMessage({
-        to: lead?.mobileNumber || lead?.phone || lead?.data?.mobileNumber || lead?.data?.phone,
-        template_id,
-        language,
-        variables,
-        lead
-      });
-
+      // await sendWhatsAppMessage({ template_id, variables, lead });
       break;
     }
 
-    // =============================
-    // 2. UPDATE LEAD STATUS
-    // =============================
+    // ================== STATUS UPDATE ==================
     case "status": {
       const { status_id } = node.data || {};
-
       if (!status_id) return;
 
-      await Lead.update(
-        { status_id },
-        { where: { id: lead.id } }
-      );
+      console.log("🔄 Updating lead status to", status_id);
 
-      // 🔥 VERY IMPORTANT
-      // Trigger next workflows due to status change
-      await onLeadStatusChange({
-        ...lead,
+      // await Lead.update({ status_id }, { where: { id: lead.id } });
+
+      await onLeadStatusChange(
+        { ...lead, status_id },
         status_id
-      }, status_id);
-
+      );
       break;
     }
 
-    // =============================
-    // 3. DELAY (handled by queue)
-    // =============================
+    // ================== DELAY ==================
     case "delay": {
-      const { minutes = 0 } = node.data || {};
+      const { minutes } = node.data || {};
+      console.log(`⏳ Delay for ${minutes} minutes`);
 
-      await WorkflowQueue.create({
-        node_id: node.node_id,
-        lead_id: lead.id,
-        execute_at: new Date(Date.now() + minutes * 60 * 1000)
-      });
-
+      // Here push to BullMQ / Agenda
       break;
     }
 
     default:
-      console.warn("Unknown action type:", node.action_type);
+      console.warn("Unknown action:", node.action_type);
   }
-}
+};

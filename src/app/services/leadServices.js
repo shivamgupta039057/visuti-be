@@ -9,7 +9,7 @@ const XLSX = require("xlsx");
 const path = require("path");
 const fs = require("fs");
 const WorkflowNode = require("../../pgModels/workflow/workflowNode.model");
-const OnLeadStatusChange = require("../../utils/OnLeadStatusChange.jsx");
+const OnLeadStatusChange = require("../../utils/OnLeadStatusChange.js");
 
 /**
  * Add or update dynamic home page services according to schema.
