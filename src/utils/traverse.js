@@ -24,7 +24,7 @@ module.exports = async function traverse(nodeId, lead, visited) {
   // Will hold the last non-undefined result from actions/children
   let result;
 
-  if (node.node_type === "condition") {
+  if (node.node_type === "CONDITION") {
     // Let conditions decide which branch to follow and propagate any result
     result = await handleCondition(node, lead, visited);
   }
