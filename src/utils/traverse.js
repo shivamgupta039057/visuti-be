@@ -8,8 +8,11 @@ module.exports = async function traverse(nodeId, lead, visited) {
   if (visited.has(nodeId)) return;
   visited.add(nodeId);
 
+  // console.log(visited,"visteddsdsdsd")
+
   const node = await WorkflowNode.findOne({ where: { node_id: nodeId } });
 
+  // console.log(node,"nodeeeee")
   if (!node) return;
 
   // switch (node.node_type) {
@@ -33,10 +36,12 @@ module.exports = async function traverse(nodeId, lead, visited) {
   }
 
 
+  console.log(visited,"ssssssssssss")
   // Continue to next nodes
   const edges = await WorkflowEdge.findAll({
     where: { source: nodeId }
   });
+  console.log(edges,"eeeeeeeeeeee")
 
   for (const edge of edges) {
     await traverse(edge.target, lead,visited);

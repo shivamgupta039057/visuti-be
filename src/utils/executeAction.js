@@ -2,20 +2,22 @@ const onLeadStatusChange = require("./onLeadStatusChange");
 // const sendWhatsAppMessage = require("../services/whatsapp");
 
 module.exports = async function executeAction(node, lead) {
+  console.log(node.action_type,"actionaaaaaaaaaa")
   switch (node.action_type) {
-
     // ================== WHATSAPP ==================
-    case "whatsapp": {
+    case "Templates": {
       const { template_id, variables } = node.data || {};
 
-      console.log("📲 Sending WhatsApp to", lead.phone);
+      console.log("📲 Sending WhatsApp to hsdkjhfkjhkjdh", lead.phone);
 
       // await sendWhatsAppMessage({ template_id, variables, lead });
       break;
     }
 
     // ================== STATUS UPDATE ==================
-    case "status": {
+    case "Lead Status": {
+      console.log("Lead status first")
+
       const { status_id } = node.data || {};
       if (!status_id) return;
 
