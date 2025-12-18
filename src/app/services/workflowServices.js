@@ -93,17 +93,16 @@ exports.saveWorkFlow = async (body) => {
   try {
     const { name, nodes, edges } = body;
     console.log("namenodesedgesnamenodesedgesnamenodesedgesnamenodesedges" , name, nodes, edges );
-    
-    // Check for required fields
-    if (!name || !nodes || !Array.isArray(nodes) || nodes.length === 0) {
-      return {
-        statusCode: 400,
-        success: false,
-        message: "name and nodes are required.",
-      };
-    }
+      // Check for required fields
+      if (!name || !nodes || !Array.isArray(nodes) || nodes.length === 0) {
+        return {
+          statusCode: 400,
+          success: false,
+          message: "name and nodes are required.",
+        };
+      }
 
-    // Optionally check edges structure if relevant to your workflow
+         // Optionally check edges structure if relevant to your workflow
     if (!edges || !Array.isArray(edges)) {
       return {
         statusCode: 400,
@@ -111,6 +110,38 @@ exports.saveWorkFlow = async (body) => {
         message: "edges is required and should be an array.",
       };
     }
+
+
+    // Check for duplicate EVENT node type with the same action_type in WorkflowNode table
+    if (Array.isArray(nodes)) {
+      for (const node of nodes) {
+        // Check for node_type === EVENT
+        if (node.data?.type === "EVENT") {
+          // action_type may be node.data?.sub (based on surrounding code)
+          const actionType = node.data?.sub;
+
+          // Query to check if a WorkflowNode with this node_type and action_type already exists
+          const existingNode = await WorkflowNode.findOne({
+            where: {
+              node_type: "EVENT",
+              action_type: actionType,
+            }
+          });
+
+          if (existingNode) {
+            return {
+              statusCode: 409,
+              success: false,
+              message: `Duplicate EVENT node with action_type "${actionType}" found. EVENT nodes must be unique by action_type.`,
+            };
+          }
+        }
+      }
+    }
+    
+  
+
+ 
 
     // Create workflow
     const workflow = await Workflow.create({ name });

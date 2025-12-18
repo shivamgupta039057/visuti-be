@@ -35,6 +35,8 @@ module.exports = async function traverse(nodeId, lead, visited) {
   }
 
   console.log(visited, "ssssssssssss");
+  console.log("dfddddddddddd");
+  
   // Continue to next nodes
   const edges = await WorkflowEdge.findAll({
     where: { source: nodeId },
