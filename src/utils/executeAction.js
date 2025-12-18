@@ -1,36 +1,54 @@
-const WorkflowEdge = require("../pgModels/workflow/workflowEdge.model");
-const executeNode = require('./EcuteNode.js');
-const traverse = require('./traverse.js');
+const OnLeadStatusChange = require("./OnLeadStatusChange");
+// const sendWhatsAppMessage = require("../services/whatsapp");
 
-module.exports = async function executeAction(node, lead, context = {}) {
-  console.log("weeeeeeeeeeeeeeeeenode, lead", node, lead);
+// Extract Templates handler output logic outside the switch/case as a function
+function handleTemplateAction(node) {
+  const { template_id, variables } = node.data || {};
+  console.log("fffnodenodenodenodenodenodenodenode", node);
 
-  const data = await executeNode(node, lead);
+  console.log("📲 Sending WhatsApp to hsdkjhfkjhkjdh", node.data.selectedData.label);
+  return node.data.selectedData.label;
 
-  console.log("ryryryruddurururrdatadatadatadatadatadata", data);
+  // await sendWhatsAppMessage({ template_id, variables, lead });
+}
 
-  const edges = await WorkflowEdge.findAll({
-    where: { source: node.node_id }
-  });
-
-  for (const edge of edges) {
-    // Some edge records might use .target or .target_node_id depending on your model definition
-    const targetNodeId = edge.target || edge.target_node_id || (edge.dataValues && (edge.dataValues.target || edge.dataValues.target_node_id));
-
-    console.log("Edge target node id:", targetNodeId);
-
-    if (!targetNodeId) {
-      console.error("Target node id not found on edge", edge);
-      continue;
+module.exports = async function executeAction(node, lead) {
+  console.log(node.action_type, "actionaaaaaaaaaa");
+  switch (node.action_type) {
+    // ================== WHATSAPP ==================
+    case "Templates": {
+      // Take output from external function
+      return handleTemplateAction(node);
     }
 
-    // Defensive check as per error at code block (708-709)
-    if (typeof traverse !== "function") {
-      console.error('traverse is not a function (value:', traverse, ')');
-      throw new Error("traverse is not a function"); // Explicitly throw
+    // ================== STATUS UPDATE ==================
+    case "Lead Status": {
+      console.log("Lead status first")
+
+      const { status_id } = node.data || {};
+      if (!status_id) return;
+
+      console.log("🔄 Updating lead status to", status_id);
+
+      // await Lead.update({ status_id }, { where: { id: lead.id } });
+
+      await OnLeadStatusChange(
+        { ...lead, status_id },
+        status_id
+      );
+      break;
     }
 
-    // Pass context for cycle protection (important if traverse expects it)
-    await traverse(targetNodeId, lead, context);
+    // ================== DELAY ==================
+    case "delay": {
+      const { minutes } = node.data || {};
+      console.log(`⏳ Delay for ${minutes} minutes`);
+
+      // Here push to BullMQ / Agenda
+      break;
+    }
+
+    default:
+      console.warn("Unknown action:", node.action_type);
   }
 };

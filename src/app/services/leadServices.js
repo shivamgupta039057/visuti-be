@@ -392,9 +392,9 @@ exports.changeStatus = async (body, params) => {
       };
     }
 
-    console.log("leadDataleadDataleadData" , leadData);
+    // console.log("leadDataleadDataleadData" , leadData);
     
-     console.log("leadIdleadIdleadIdleadIdleadIdleadId" , leadId ,  statusId);
+    //  console.log("leadIdleadIdleadIdleadIdleadIdleadId" , leadId ,  statusId);
 
     // If there is no associated stage
     if (!status.stage_id && (!status.stage || !status.stage.id)) {

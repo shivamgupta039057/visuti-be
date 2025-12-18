@@ -1,29 +1,40 @@
-const WorkflowNode = require('../pgModels/workflow/workflowNode.model.js');
-const WorkflowEdge = require('../pgModels/workflow/workflowEdge.model.js');
-const executeNode = require('./EcuteNode.js');
-const  traverse  = require('./traverse.js');
+const WorkflowNode = require("../pgModels/workflow/workflowNode.model.js");
+const traverse = require("./traverse.js");
 
 module.exports = async function OnLeadStatusChange(lead, status) {
   console.log("Lead status changed:", status);
 
-  const statusNodes = await WorkflowNode.findAll({
+  // 1. Find workflows (nodes) whose trigger matches this lead status.
+  const triggerNodes = await WorkflowNode.findAll({
     where: {
-      
       action_type: "Lead Status",
-      // Use Sequelize's JSON querying for nested fields
-      'data.selectedData.id': status
-    }
+      // 'data.selectedData.id': status
+      "data.selectedData.id": String(status),
+    },
   });
 
-  if (!statusNodes || statusNodes.length === 0) return;
+  console.log("triggerNodestriggerNodestriggerNodes", triggerNodes);
 
-  for (const status of statusNodes) {
-   
-    const nodeId = status.node_id || (status.dataValues && status.dataValues.node_id);
+  if (!triggerNodes || triggerNodes.length === 0) return null;
+
+  const results = [];
+
+  for (const trigger of triggerNodes) {
+    const nodeId =
+      trigger.node_id || (trigger.dataValues && trigger.dataValues.node_id);
     const leadData = lead && lead.dataValues ? lead.dataValues : lead;
 
-    console.log("leadDatanodeIdnodeId" , nodeId , leadData );
-    
-    await traverse(nodeId, leadData);
+    console.log("nodeIdnodeIdnodeIdnodeIdnodeId", nodeId, leadData);
+
+    // Capture any data returned from the workflow traversal (e.g. template label)
+    const result = await traverse(nodeId, leadData, new Set());
+    if (result !== undefined && result !== null) {
+      results.push(result);
+    }
   }
+
+  // If there was only one result, return it directly; otherwise return array
+  if (results.length === 0) return null;
+  if (results.length === 1) return results[0];
+  return results;
 };

@@ -51,6 +51,7 @@ exports.leadStatusValidation = Joi.object({
     stage_id: Joi.number().required(),
     name: Joi.string().trim().required(),
     color: Joi.string().allow(null, "").optional(),
+    is_default:Joi.boolean().optional()
 });
 
 // Joi validation schema for LeadReason model
