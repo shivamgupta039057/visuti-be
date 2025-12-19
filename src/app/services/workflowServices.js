@@ -162,7 +162,8 @@ exports.saveWorkFlow = async (body) => {
       await WorkflowEdge.create({
         workflow_id: workflow.id,
         source: edge.source,
-        target: edge.target
+        target: edge.target,
+        condition: edge.condition || null
       });
     }
 
