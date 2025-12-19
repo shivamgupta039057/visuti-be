@@ -1,13 +1,8 @@
 const traverse = require("./traverse");
 const WorkflowEdge = require("../pgModels/workflow/workflowEdge.model");
 module.exports = async function handleCondition(node, lead, visited) {
-  console.log("ddkddkddnodenodenodenodenodenodenode" , node , visited);
   
   const { field, operator, value } = node.data.selectedData || {};
-
-  console.log("dddddfffffffffffffffffffffffffffffffffffffff" , node.data.selectedData);
-  
-
   let result = false;
 
   switch (operator) {
@@ -23,9 +18,6 @@ module.exports = async function handleCondition(node, lead, visited) {
       break;
   }
 
-  console.log("resultresultresultresult" , result);
-  console.log("node.node_idnode" , node.node_id);
-  
 
   const edge = await WorkflowEdge.findOne({
     where: {
@@ -34,10 +26,10 @@ module.exports = async function handleCondition(node, lead, visited) {
     }
   });
 
-  console.log("dffffffffffffffffffedgeedgeedgeedgeedge" , edge);
+
   
 
   if (edge) {
-    await traverse(edge.target, lead);
+    await traverse(edge.target, lead,visited);
   }
 }

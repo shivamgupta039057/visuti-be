@@ -5,6 +5,7 @@ const traverse = require("./traverse.js");
 module.exports = async function OnLeadStatusChange(lead, status) {
   console.log("Lead status changed:", status);
 
+  console.log(lead,"leaddddd")
   // 1. Find workflows (nodes) whose trigger matches this lead status.
   const triggerNodes = await WorkflowNode.findAll({
     where: {
@@ -13,7 +14,7 @@ module.exports = async function OnLeadStatusChange(lead, status) {
     },
   });
 
-  console.log("triggerNodestriggerNodestriggerNodes", triggerNodes);
+  // console.log("triggerNodestriggerNodestriggerNodes", triggerNodes);
 
   if (!triggerNodes || triggerNodes.length === 0) return null;
   const results = [];
@@ -23,10 +24,10 @@ module.exports = async function OnLeadStatusChange(lead, status) {
       trigger.node_id || (trigger.dataValues && trigger.dataValues.node_id);
     const leadData = lead && lead.dataValues ? lead.dataValues : lead;
 
-    console.log("nodeIdnodeIdnodeIdnodeIdnodeId", nodeId, leadData);
+    // console.log("nodeIdnodeIdnodeIdnodeIdnodeId", nodeId, leadData);
 
     // Capture any data returned from the workflow traversal (e.g. template label)
-    const result = await traverse(nodeId, leadData, new Set());
+    const result = await traverse(nodeId, leadData, new Set(),status);
     if (result !== undefined && result !== null) {
       results.push(result);
     }

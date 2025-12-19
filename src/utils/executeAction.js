@@ -4,7 +4,7 @@ const OnLeadStatusChange = require("./OnLeadStatusChange");
 // Extract Templates handler output logic outside the switch/case as a function
 function handleTemplateAction(node) {
   const { template_id, variables } = node.data || {};
-  console.log("fffnodenodenodenodenodenodenodenode", node);
+  // console.log("fffnodenodenodenodenodenodenodenode", node);
 
   console.log("📲 Sending WhatsApp to hsdkjhfkjhkjdh", node.data.selectedData.label);
   return node.data.selectedData.label;
@@ -13,7 +13,7 @@ function handleTemplateAction(node) {
 }
 
 module.exports = async function executeAction(node, lead) {
-  console.log(node.action_type, "actionaaaaaaaaaa");
+  // console.log(node.action_type, "actionaaaaaaaaaa");
   switch (node.action_type) {
     // ================== WHATSAPP ==================
     case "Templates": {
