@@ -9,7 +9,7 @@ const { uploadFile } = require("../../helper/fileUploader");
 
 router.post('/addLeadfield', validate(leadFieldValidation), responseHandler(controller.createLeadFieldController));
 router.get('/getfieldlist', responseHandler(controller.getLeadFieldsController));
-router.post('/updatefieldlist/:id', responseHandler(controller.updateLeadFieldController));
+router.post('/updatefieldlist/:leadId', responseHandler(controller.updateLeadFieldController));
 router.post('/deletefieldlist/:id', responseHandler(controller.deleteLeadFieldController));
 router.get('/reorderfieldlist', responseHandler(controller.reorderLeadFieldController));
 
