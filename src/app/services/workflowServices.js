@@ -93,6 +93,7 @@ exports.saveWorkFlow = async (body) => {
   try {
     const { name, nodes, edges } = body;
     console.log("namenodesedgesnamenodesedgesnamenodesedgesnamenodesedges" , name, nodes, edges );
+
       // Check for required fields
       if (!name || !nodes || !Array.isArray(nodes) || nodes.length === 0) {
         return {
@@ -117,31 +118,33 @@ exports.saveWorkFlow = async (body) => {
       for (const node of nodes) {
         // Check for node_type === EVENT
         if (node.data?.type === "EVENT") {
-          // action_type may be node.data?.sub (based on surrounding code)
           const actionType = node.data?.sub;
+          const data = node.data.selectedData || {};
 
-          // Query to check if a WorkflowNode with this node_type and action_type already exists
-          const existingNode = await WorkflowNode.findOne({
-            where: {
-              node_type: "EVENT",
-              action_type: actionType,
+          // Check if selectedData object has keys
+          const dataKeys = Object.keys(data);
+
+          // If dataKeys.length === 0, don't allow duplicate entries (one EVENT node for each actionType with empty selectedData)
+          if (dataKeys.length === 0) {
+            const existingNode = await WorkflowNode.findOne({
+              where: {
+                node_type: "EVENT",
+                action_type: actionType
+              }
+            });
+            if (existingNode) {
+              return {
+                statusCode: 409,
+                success: false,
+                message: `Duplicate EVENT node with action_type "${actionType}" found. EVENT nodes with empty selectedData must be unique by action_type.`,
+              };
             }
-          });
-
-          if (existingNode) {
-            return {
-              statusCode: 409,
-              success: false,
-              message: `Duplicate EVENT node with action_type "${actionType}" found. EVENT nodes must be unique by action_type.`,
-            };
           }
+          // If dataKeys.length > 0, allow multiple entries (do not check for duplicates)
+          // (So, do nothing in this case)
         }
       }
     }
-    
-  
-
- 
 
     // Create workflow
     const workflow = await Workflow.create({ name });

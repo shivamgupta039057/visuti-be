@@ -10,6 +10,7 @@ const path = require("path");
 const fs = require("fs");
 const WorkflowNode = require("../../pgModels/workflow/workflowNode.model");
 const OnLeadStatusChange = require("../../utils/OnLeadStatusChange.js");
+const OnManualLead = require("../../utils/OnManualLead.js");
 
 /**
  * Add or update dynamic home page services according to schema.
@@ -22,11 +23,19 @@ exports.addLead = async (body) => {
   console.log("sdssadsasdsbodybodybodybody", body);
 
   try {
+    let dataTemp;
     const { data, source, assignedTo, notes } = body;
 
     const status = await LeadStatus.findOne({ where: { is_default: true } });
 
     console.log("statusstatusstatusstatus", status);
+
+      if (typeof OnManualLead === "function") {
+      console.log("Calling OnManualLead function...");
+       dataTemp = await OnManualLead();      
+    } else {
+      console.log("OnManualLead is not a function:", typeof OnManualLead);
+    }
 
     const lead = await Lead.create({
       data,
@@ -35,40 +44,10 @@ exports.addLead = async (body) => {
       notes,
     });
 
-    const workflowRule = await WorkflowRules.findOne({
-      where: { type: "ManualLead" },
-    });
-
-    if (workflowRule && workflowRule.action_data) {
-      console.log(
-        "Workflow Template for this status:",
-        workflowRule.action_data
-      );
-
-      // Check for existing queue entry
-      let queueEntry = await WorkFlowQueue.findOne({
-        where: {
-          workflow_ruleID: workflowRule.id,
-        },
-      });
-
-      if (queueEntry) {
-        await queueEntry.update({
-          Status: "executed",
-          executed_At: null,
-        });
-      } else {
-        await WorkFlowQueue.create({
-          lead_id: lead_id,
-          workflow_ruleID: workflowRule.id,
-          Status: "processing",
-        });
-      }
-    }
-
     return {
       statusCode: statusCode.OK,
       success: true,
+      dataTemp,
       message: resMessage.LEAD_CREATED || "Lead Created successfull",
       data: {
         lead,

@@ -1,9 +1,9 @@
 const { statusCode, resMessage } = require("../../config/default.json");
+const Lead = require("../../pgModels/lead");
+const LeadField = require("../../pgModels/leadField");
 // const Lead = require("../../pgModels/lead");
 const leadfield = require("../../pgModels/leadField");
-const LeadStatus = require("../../pgModels/LeadStages/leadStatus");
-const WorkflowRules = require("../../pgModels/workflowRulesModel"); // Make sure to require the WorkflowRules model if not already at the top
-const WorkFlowQueue = require("../../pgModels/workflowQueueModel");
+const OnLeadFieldChange = require("../../utils/OnLeadFieldChange");
 /**
  * Add or update dynamic home page services according to schema.
  *
@@ -79,59 +79,77 @@ exports.getAllLeadFields = async (query) => {
   }
 };
 
-exports.updateLeadFieldServices = async (params , body) => {
-  const { id } = params;
+exports.updateLeadFieldServices = async (params, body) => {
+
+  console.log("bodybodybody" , body);
+  
+  const { leadId } = params; // expect: id = leadFieldId, leadId = lead id (optional)
   try {
-    const updatefield = await leadfield.update(
-      { ...body },
-      {
-        where: { id: id },
+
+    let dataTemp = null;
+    let leadData = null;
+
+    // If a leadId is given (for OnLeadFieldChange logic)
+    if (leadId) {
+       leadData = await Lead.findByPk(leadId);
+      if (!leadData) {
+        return {
+          statusCode: statusCode.NOT_FOUND,
+          success: false,
+          message: "Lead not found",
+        };
       }
-    );
+      console.log("leadDataleadData" , leadId);
+      // Extract the dynamic key from the body object (assumes body has exactly one key)
+      const fieldKey = body && typeof body === 'object' ? Object.keys(body)[0] : undefined;
+      const fieldvalue = body && typeof body === 'object' ? Object.values(body)[0] : undefined;
 
-      // Check workflow rules
-      const workflowRule = await WorkflowRules.findOne({
-        where: { Status_id: id },
-      });
 
-      if (workflowRule && workflowRule.action_data) {
-        console.log(
-          "Workflow Template for this status:",
-          workflowRule.action_data
-        );
+     const leadFieldData = await LeadField.findOne({ where: { name: fieldKey } });
 
-        // Find the related lead_id from leadfield
-        const leadFieldRecord = await leadfield.findByPk(id);
-        const lead_id = leadFieldRecord.id; // assuming leadfield table has lead_id
+     if (!leadFieldData) {
+      return {
+        statusCode: statusCode.NOT_FOUND,
+        success: false,
+        message: "Lead field not found",
+      };
+    }
 
-        // Check for existing queue entry
-        let queueEntry = await WorkFlowQueue.findOne({
-          where: {
-            workflow_ruleID: workflowRule.id,
-          },
-        });
 
-        if (queueEntry) {
-          await queueEntry.update({
-            Status: "executed",
-            executed_At: null,
-          });
-        } else {
-          await WorkFlowQueue.create({
-            lead_id: lead_id,
-            workflow_ruleID: workflowRule.id,
-            Status: "processing",
-          });
-        }
+      console.log("hasNameKeyhasNameKeyhasNameKeyhasNameKey" , leadFieldData);
+      
+      
+      if (typeof OnLeadFieldChange === "function") {
+        console.log("Calling OnLeadFieldChange function...");
+        dataTemp = await OnLeadFieldChange(leadData, leadFieldData , fieldvalue);
+      } else {
+        console.log("OnLeadFieldChange is not a function:", typeof OnLeadFieldChange);
       }
+    }
+    console.log("dataTempdataTempdataTemp" , dataTemp);
+
     
+    const currentData = (leadData.dataValues && leadData.dataValues.data) ? { ...leadData.dataValues.data } : {};
 
+    // Find the key in body that should update the data object (single key assumed)
+    const updateKey = body && typeof body === 'object' ? Object.keys(body)[0] : undefined;
+    if (updateKey && Object.prototype.hasOwnProperty.call(currentData, updateKey)) {
+      // Update value in data if key matches
+      currentData[updateKey] = body[updateKey];
+    }
+  console.log("currentDatacurrentDatacurrentData" , currentData);
+  
+     const updateResult = await Lead.update(
+      { data: currentData },
+      { where: { id: leadId } }
+    );
 
     return {
       statusCode: statusCode.OK,
       success: true,
+      dataTemp,
       message: resMessage.UPDATE_LEAD_FIELD_Data,
-      data: updatefield,
+      data: updateResult,
     };
   } catch (error) {
     return {
