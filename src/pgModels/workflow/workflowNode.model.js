@@ -7,7 +7,8 @@ const WorkflowNode = sequelize.define("WorkflowNode", {
   node_type: DataTypes.STRING,   // trigger | action |condition
   action_type: DataTypes.STRING, //whatsapp | status | delay | Lead Status
   data: DataTypes.JSONB,
-  position: DataTypes.JSONB
+  position: DataTypes.JSONB,
+  extraNodeData: DataTypes.JSON
 });
 
 // Define associations

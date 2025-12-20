@@ -1,5 +1,5 @@
 const { statusCode, resMessage } = require("../../config/default.json");
-const {  LeadStatus,WorkflowRules,} = require("../../pgModels/index");
+const { LeadStatus, WorkflowRules, } = require("../../pgModels/index");
 const Workflow = require('../../pgModels/workflow/workflow.model');
 const WorkflowNode = require('../../pgModels/workflow/workflowNode.model');
 const WorkflowEdge = require('../../pgModels/workflow/workflowEdge.model');
@@ -13,8 +13,8 @@ const WorkflowEdge = require('../../pgModels/workflow/workflowEdge.model');
  */
 exports.createWorkFlow = async (body) => {
   try {
-    console.log("dfkdjhfkdjklsdjdklsfjdksljdfldjkl" , body);
-    
+    console.log("dfkdjhfkdjklsdjdklsfjdksljdfldjkl", body);
+
     const { Status_id, ActionType, action_data, Delay, isActive } = body;
 
     // Check for required fields
@@ -25,7 +25,7 @@ exports.createWorkFlow = async (body) => {
         message: "Status_id, ActionType, and action_data are required.",
       };
     }
-    
+
     // Optionally, check if a rule with exactly same key already exists
     const exists = await WorkflowRules.findOne({
       where: { Status_id, ActionType },
@@ -62,24 +62,54 @@ exports.createWorkFlow = async (body) => {
 };
 
 
+// exports.getWorkFlow = async () => {
+//   try {
+//     const rules = await WorkflowRules.findAll({
+//       include: [
+//         { model: LeadStatus, as: "status", attributes: ["id", "name"] }
+//       ],
+//       order: [["id", "DESC"]]
+//     });
+
+//     return {
+//       statusCode: statusCode.OK,
+//       success: true,
+//       message: "Workflow rules fetched successfully",
+//       data: rules
+//     };
+//   } catch (error) {
+//     return {
+//       statusCode: statusCode.BAD_REQUEST,
+//       success: false,
+//       message: error.message
+//     };
+//   }
+// };
+
 exports.getWorkFlow = async () => {
   try {
-    const rules = await WorkflowRules.findAll({
+    const workflows = await Workflow.findAll({
       include: [
-        { model: LeadStatus, as: "status", attributes: ["id", "name"] }
-      ],
-      order: [["id", "DESC"]]
+        { model: WorkflowNode, attributes: ["extraNodeData"] },
+        { model: WorkflowEdge, attributes: ["extraEdgeData"] }
+      ]
     });
 
+    const response = workflows.map(wf => ({
+      name: wf.name,
+      nodes: wf.WorkflowNodes.map(n => n.extraNodeData),
+      edges: wf.WorkflowEdges.map(e => e.extraEdgeData)
+    }));
+
     return {
-      statusCode: statusCode.OK,
+      statusCode: 200,
       success: true,
-      message: "Workflow rules fetched successfully",
-      data: rules
+      data: response
     };
+
   } catch (error) {
     return {
-      statusCode: statusCode.BAD_REQUEST,
+      statusCode: 400,
       success: false,
       message: error.message
     };
@@ -92,17 +122,17 @@ exports.getWorkFlow = async () => {
 exports.saveWorkFlow = async (body) => {
   try {
     const { name, nodes, edges } = body;
-    console.log("namenodesedgesnamenodesedgesnamenodesedgesnamenodesedges" , name, nodes, edges );
-      // Check for required fields
-      if (!name || !nodes || !Array.isArray(nodes) || nodes.length === 0) {
-        return {
-          statusCode: 400,
-          success: false,
-          message: "name and nodes are required.",
-        };
-      }
+    console.log("namenodesedgesnamenodesedgesnamenodesedgesnamenodesedges", name, nodes, edges);
+    // Check for required fields
+    if (!name || !nodes || !Array.isArray(nodes) || nodes.length === 0) {
+      return {
+        statusCode: 400,
+        success: false,
+        message: "name and nodes are required.",
+      };
+    }
 
-         // Optionally check edges structure if relevant to your workflow
+    // Optionally check edges structure if relevant to your workflow
     if (!edges || !Array.isArray(edges)) {
       return {
         statusCode: 400,
@@ -138,10 +168,10 @@ exports.saveWorkFlow = async (body) => {
         }
       }
     }
-    
-  
 
- 
+
+
+
 
     // Create workflow
     const workflow = await Workflow.create({ name });
@@ -149,12 +179,13 @@ exports.saveWorkFlow = async (body) => {
     // Save nodes
     for (const node of nodes) {
       await WorkflowNode.create({
-        WorkflowId: workflow.id, // Sequelize: referenced as modelName + Id
+        workflow_id: workflow.id, // Sequelize: referenced as modelName + Id
         node_id: node.id,
         node_type: node.data?.type,      // EVENT / ACTION /  condition / delay
         action_type: node.data?.sub,     // Lead Status / WhatsApp or similar
         data: node.data,
-        position: node.position
+        position: node.position,
+        extraNodeData: node
       });
     }
 
@@ -163,7 +194,8 @@ exports.saveWorkFlow = async (body) => {
         workflow_id: workflow.id,
         source: edge.source,
         target: edge.target,
-        condition: edge.condition || null
+        condition: edge.condition || null,
+        extraEdgeData: edge
       });
     }
 

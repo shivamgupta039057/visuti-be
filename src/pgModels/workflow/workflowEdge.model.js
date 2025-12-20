@@ -8,7 +8,8 @@ const WorkflowEdge = sequelize.define("WorkflowEdge", {
   condition: {
     type: DataTypes.ENUM("YES", "NO"),
     allowNull: true
-  }
+  },
+  extraEdgeData:DataTypes.JSON
 });
 
 // Define associations
