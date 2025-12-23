@@ -7,7 +7,16 @@ const { leadValidation } = require("../../validators/app/leadVal.js");
 const upload = require('../../helper/multer');
 const { uploadFile } = require("../../helper/fileUploader");
 
-router.post('/webhook',responseHandler(controller.handleWebhook));
 router.get('/webhook',responseHandler(controller.verifyWebhook));
+router.post('/webhook',responseHandler(controller.receiveMessage));
+// new workflwo data
+router.post('/send-text',responseHandler(controller.sendText));
+router.post('/send-template', responseHandler(controller.sendTemplate));
+
+
+router.get('/chats',responseHandler(controller.getChat));
+router.get('/messages/:id',responseHandler(controller.getMessagesByChatId));
+
+
 
 module.exports = router;
