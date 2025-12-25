@@ -57,6 +57,10 @@ const LeadField = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+     is_primary_field: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+  },
   },
   {
     tableName: "LeadField",

@@ -15,17 +15,19 @@ async function insertDefaultLeadFields(LeadField) {
             await LeadField.bulkCreate([
                 {
                     name: "name",
-                    lable: "name",
+                    lable: "Name",
                     type: "text",
                     is_required: true,
                     order: 1,
+                    is_primary_field: true,
                 },
                 {
-                    name: "phone_number",
-                    lable: "Phone Number",
+                    name: "whatsapp_number",
+                    lable: "Whatsapp Number",
                     type: "phone",
                     is_required: true,
                     order: 2,
+                    is_primary_field: true,
                 },
             ]);
 

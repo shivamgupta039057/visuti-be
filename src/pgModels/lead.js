@@ -15,7 +15,15 @@ const Lead = sequelize.define(
     data: {
       type: DataTypes.JSONB,
       allowNull: true,  // store form data dynamically
-    },    
+    }, 
+    name: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    whatsapp_number: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     source: {
       type: DataTypes.STRING, 
       allowNull: true,
