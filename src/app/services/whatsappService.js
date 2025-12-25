@@ -72,30 +72,48 @@ const Lead = require("../../pgModels/lead");
 const WhatsappChat = require("../../pgModels/whatsapp/WhatsappChat");
 const WhatsappMessage = require("../../pgModels/whatsapp/WhatsappMessage");
 const API_URL = `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_ID}/messages`;
-
+const { parsePhoneNumberFromString } = require('libphonenumber-js');
 
 
 exports.handleIncomingMessage = async (payload) => {
   const message = payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
   if (!message) return;
 
+   const exists = await WhatsappMessage.findOne({
+    where: { meta_message_id: message.id }
+  });
+  if (exists) return;
+  
+
   const phone = message.from;
   const text = message.text?.body || "";
 
+
+  const numberMatch = phone.match(/\d+/);
+  let whatsapp_number
+  if (numberMatch) {
+    const phoneNumber = parsePhoneNumberFromString(`+${numberMatch[0]}`);
+    whatsapp_number = phoneNumber.nationalNumber
+      // console.log("Country Code:", phoneNumber.countryCallingCode);
+      // console.log("National Number:", phoneNumber.nationalNumber);
+      // console.log("Country:", phoneNumber.country);
+    
+  }
   // 1️⃣ Find or create lead
-  let lead = await Lead.findOne({ where: { phone } });
+  let lead = await Lead.findOne({ where: { whatsapp_number } });
+
   if (!lead) {
     lead = await Lead.create({
-      phone,
+      whatsapp_number,
       source: "whatsapp"
     });
   }
 
   // 2️⃣ Chat
-  let chat = await WhatsappChat.findOne({ where: { phone } });
+  let chat = await WhatsappChat.findOne({ where: { phone: whatsapp_number } });
   if (!chat) {
     chat = await WhatsappChat.create({
-      phone,
+      phone: whatsapp_number,
       lead_id: lead.id,
       last_message_at: new Date()
     });
@@ -120,6 +138,9 @@ exports.handleIncomingMessage = async (payload) => {
 
 exports.sendText = async ({ phone, text }) => {
   try {
+
+      const chat = await getOrCreateChat(phone);
+
     const response = await axios.post(
       API_URL,
       {
@@ -137,7 +158,21 @@ exports.sendText = async ({ phone, text }) => {
         }
       }
     );
+   await WhatsappMessage.create({
+      chat_id: chat.id,
+      direction: "OUT",
+      message_type: "text",
+      content: text,
+      meta_message_id: response.data?.messages?.[0]?.id // WhatsApp message id
+    });
 
+    // 4️⃣ Update chat
+    await chat.update({
+      last_message_at: new Date(),
+      is_24h_active: true
+    });
+
+    
     return response.data;
   } catch (error) {
     console.error("Error sending WhatsApp text:", error);
@@ -147,8 +182,7 @@ exports.sendText = async ({ phone, text }) => {
 
 exports.sendTemplate = async ({ phone, template_name, language = "en_US", }) => {
   try {
-    console.log("eeeeeeeeeeeeeeddddddddddddddddddddddddd" , phone, template_name, language);
-    
+  const chat = await getOrCreateChat(phone);
     const response = await axios.post(
       API_URL,
       {
@@ -167,9 +201,21 @@ exports.sendTemplate = async ({ phone, template_name, language = "en_US", }) => 
         }
       }
     );
+    await WhatsappMessage.create({
+      chat_id: chat.id,
+      direction: "OUT",
+      message_type: "template",
+      content: template_name,
+      meta_message_id: response.data?.messages?.[0]?.id
+    });
+
+    await chat.update({
+      last_message_at: new Date(),
+      is_24h_active: true
+    });
 
     return response.data;
-    
+
   } catch (error) {
     console.error("Error sending WhatsApp template:", error);
     throw error;
@@ -181,8 +227,8 @@ exports.sendTemplate = async ({ phone, template_name, language = "en_US", }) => 
 exports.getChat = async () => {
   try {
     const chat = await WhatsappChat.findAll({
-    order: [["updatedAt", "DESC"]],
-  });
+      order: [["updatedAt", "DESC"]],
+    });
 
     return {
       statusCode: 200,
@@ -202,10 +248,10 @@ exports.getChat = async () => {
 exports.getMessagesByChatId = async (params) => {
   try {
     const { id } = params;
-    const chatID =  await WhatsappMessage.findAll({
-    where: { chat_id:  id },
-    order: [["createdAt", "ASC"]],
-  });
+    const chatID = await WhatsappMessage.findAll({
+      where: { chat_id: id },
+      order: [["createdAt", "ASC"]],
+    });
 
     return {
       statusCode: 200,
@@ -222,5 +268,38 @@ exports.getMessagesByChatId = async (params) => {
   }
 };
 
+
+
+async function getOrCreateChat(phone) {
+    const numberMatch = phone.match(/\d+/);
+  let whatsapp_number
+  if (numberMatch) {
+    const phoneNumber = parsePhoneNumberFromString(`+${numberMatch[0]}`);
+    whatsapp_number = phoneNumber.nationalNumber
+  }
+  let lead = await Lead.findOne({ where: { whatsapp_number } });
+
+  if (!lead) {
+    lead = await Lead.create({
+      whatsapp_number,
+      source: "whatsapp"
+    });
+  }
+
+  let chat = await WhatsappChat.findOne({
+    where: { phone: whatsapp_number }
+  });
+
+  if (!chat) {
+    chat = await WhatsappChat.create({
+      phone: whatsapp_number,
+      lead_id: lead.id,
+      last_message_at: new Date(),
+      is_24h_active: true
+    });
+  }
+
+  return chat;
+}
 
 
