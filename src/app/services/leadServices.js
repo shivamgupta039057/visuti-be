@@ -2,15 +2,12 @@ const { statusCode, resMessage } = require("../../config/default.json");
 const Lead = require("../../pgModels/lead");
 const { Op } = require("sequelize");
 const LeadStage = require("../../pgModels/LeadStages/LeadStage");
-const {LeadStatus} = require("../../pgModels");
+const LeadStatus = require("../../pgModels/LeadStages/leadStatus");
 const WorkflowRules = require("../../pgModels/workflowRulesModel"); // Make sure to require the WorkflowRules model if not already at the top
 const WorkFlowQueue = require("../../pgModels/workflowQueueModel");
-const XLSX = require("xlsx");
+const XLSX = require('xlsx');
 const path = require("path");
-const fs = require("fs");
-const WorkflowNode = require("../../pgModels/workflow/workflowNode.model");
-const OnLeadStatusChange = require("../../utils/OnLeadStatusChange.js");
-const OnManualLead = require("../../utils/OnManualLead.js");
+const fs = require('fs');
 
 /**
  * Add or update dynamic home page services according to schema.
@@ -23,19 +20,12 @@ exports.addLead = async (body) => {
   console.log("sdssadsasdsbodybodybodybody", body);
 
   try {
-    let dataTemp;
     const { data, source, assignedTo, notes } = body;
 
     const status = await LeadStatus.findOne({ where: { is_default: true } });
 
     console.log("statusstatusstatusstatus", status);
 
-      if (typeof OnManualLead === "function") {
-      console.log("Calling OnManualLead function...");
-       dataTemp = await OnManualLead();      
-    } else {
-      console.log("OnManualLead is not a function:", typeof OnManualLead);
-    }
 
     const lead = await Lead.create({
       data,
@@ -44,10 +34,41 @@ exports.addLead = async (body) => {
       notes,
     });
 
+          const workflowRule = await WorkflowRules.findOne({
+        where: { type:"ManualLead" },
+      });
+
+      if (workflowRule && workflowRule.action_data) {
+        console.log(
+          "Workflow Template for this status:",
+          workflowRule.action_data
+        );
+
+ 
+        // Check for existing queue entry
+        let queueEntry = await WorkFlowQueue.findOne({
+          where: {
+            workflow_ruleID: workflowRule.id,
+          },
+        });
+
+        if (queueEntry) {
+          await queueEntry.update({
+            Status: "executed",
+            executed_At: null,
+          });
+        } else {
+          await WorkFlowQueue.create({
+            lead_id: lead_id,
+            workflow_ruleID: workflowRule.id,
+            Status: "processing",
+          });
+        }
+      }
+
     return {
       statusCode: statusCode.OK,
       success: true,
-      dataTemp,
       message: resMessage.LEAD_CREATED || "Lead Created successfull",
       data: {
         lead,
@@ -62,6 +83,8 @@ exports.addLead = async (body) => {
     };
   }
 };
+
+
 
 // exports.getAllLeads = async (query) => {
 //   console.log("sdssadsasdsbodybodybodybody" , query);
@@ -172,6 +195,7 @@ exports.addLead = async (body) => {
 //       whereClause.createdAt = { [Op.between]: [start, end] };
 //     }
 
+
 //     // -----------------------------------------
 //     // 📌 FETCH LEADS
 //     // -----------------------------------------
@@ -187,6 +211,7 @@ exports.addLead = async (body) => {
 // });
 
 //     console.log("leadsleadsleads" , leads);
+
 
 //     return {
 //       statusCode: statusCode.OK,
@@ -220,9 +245,9 @@ exports.getAllLeads = async (query) => {
       searchText,
       statusIds,
       assignees,
-      startDate, // timestamp from frontend
-      endDate, // timestamp from frontend
-      filters = [], // dynamic filters
+      startDate,   // timestamp from frontend
+      endDate,     // timestamp from frontend
+      filters = [] // dynamic filters
     } = query;
 
     let whereClause = {};
@@ -235,9 +260,9 @@ exports.getAllLeads = async (query) => {
         ...whereClause,
         data: {
           [Op.contains]: {
-            [searchField]: searchText,
-          },
-        },
+            [searchField]: searchText
+          }
+        }
       };
     }
 
@@ -258,7 +283,7 @@ exports.getAllLeads = async (query) => {
     }
 
     // -----------------------------------------
-    // 4️⃣ TIMESTAMP DATE FILTER
+    // 4️⃣ TIMESTAMP DATE FILTER 
     // -----------------------------------------
     if (startDate && endDate) {
       const start = new Date(Number(startDate));
@@ -284,10 +309,10 @@ exports.getAllLeads = async (query) => {
       not_in: Op.notIn,
       between: Op.between,
       is_empty: "IS_EMPTY",
-      is_not_empty: "IS_NOT_EMPTY",
+      is_not_empty: "IS_NOT_EMPTY"
     };
 
-    filters.forEach((filter) => {
+    filters.forEach(filter => {
       const { field, operator, value } = filter;
       const sequelizeOperator = operatorMap[operator];
       if (!sequelizeOperator) return;
@@ -300,8 +325,8 @@ exports.getAllLeads = async (query) => {
         whereClause[field] = {
           [Op.between]: [
             new Date(Number(value[0])),
-            new Date(Number(value[1])),
-          ],
+            new Date(Number(value[1]))
+          ]
         };
       } else if (Array.isArray(value)) {
         whereClause[field] = { [sequelizeOperator]: value };
@@ -316,30 +341,34 @@ exports.getAllLeads = async (query) => {
     const leads = await Lead.findAll({
       where: whereClause,
       attributes: {
-        exclude: ["assignedTo", "stage_id", "reason_id", "created_by"],
+        exclude: ["assignedTo", "stage_id", "reason_id", "created_by"]
       },
       include: [
-        { model: LeadStatus, as: "status", attributes: ["name", "color"] },
+        { model: LeadStatus, as: "status", attributes: ["name", "color"] }
       ],
       order: [["createdAt", "DESC"]],
     });
 
+
     return {
       success: true,
       message: leads.length ? "Leads fetched successfully" : "No data found",
-      data: leads,
+      data: leads
     };
+
   } catch (error) {
     return {
       success: false,
-      message: error.message,
+      message: error.message
     };
   }
 };
 
+
+
+
 exports.changeStatus = async (body, params) => {
   try {
-    let dataTemp;
     const { leadId } = params;
     const { statusId } = body;
 
@@ -350,6 +379,7 @@ exports.changeStatus = async (body, params) => {
         message: "lead_id and status_id are required",
       };
     }
+
     // Check if the lead exists
     const leadData = await Lead.findByPk(leadId);
     if (!leadData) {
@@ -359,7 +389,8 @@ exports.changeStatus = async (body, params) => {
         message: "Lead not found",
       };
     }
-    // Check if the new status is valid and has an associated stage
+
+    // Check if the new status is valid
     const status = await LeadStatus.findByPk(statusId, {
       include: [{ model: LeadStage, as: "stage" }],
     });
@@ -371,32 +402,44 @@ exports.changeStatus = async (body, params) => {
       };
     }
 
-    // console.log("leadDataleadDataleadData" , leadData);
-    
-    //  console.log("leadIdleadIdleadIdleadIdleadIdleadId" , leadId ,  statusId);
+    // Workflow: check if this status has any workflow rules
+    const workflowRule = await WorkflowRules.findOne({
+      where: { Status_id: statusId },
+    });
 
-    // If there is no associated stage
-    if (!status.stage_id && (!status.stage || !status.stage.id)) {
-      return {
-        statusCode: statusCode.BAD_REQUEST,
-        success: false,
-        message: "leadstage is not associated to lead_statuses!",
-      };
-    }
+    // If a workflow rule with template exists: log the template, add/update queue
+    if (workflowRule && workflowRule.action_data) {
+      // Console the template
+      console.log("Workflow Template for this status:", workflowRule.action_data);
 
-    // Optionally pass both lead and new status for potential logic
-    if (typeof OnLeadStatusChange === "function") {
-      console.log("Calling OnLeadStatusChange function...");
-       dataTemp = await OnLeadStatusChange(leadData, statusId);
-      
-    } else {
-      console.log("OnLeadStatusChange is not a function:", typeof OnLeadStatusChange);
+      // Find if there is already an entry in the queue for this (lead, workflowRule)
+      let queueEntry = await WorkFlowQueue.findOne({
+        where: {
+          lead_id: leadId,
+          workflow_ruleID: workflowRule.id,
+        }
+      });
+
+      if (queueEntry) {
+        // Update the status to 'processing'
+        await queueEntry.update({
+          Status: 'executed',
+          executed_At: null
+        });
+      } else {
+        // Create an entry in queue with 'processing' status for this lead and workflow rule
+        await WorkFlowQueue.create({
+          lead_id: leadId,
+          workflow_ruleID: workflowRule.id,
+          Status: "processing"
+        });
+      }
     }
 
     // Update the lead with new status and stage
     await leadData.update({
       status_id: status.id,
-      stage_id: status.stage_id || (status.stage && status.stage.id),
+      stage_id: status.stage_id,
     });
 
     const updatedLead = await Lead.findByPk(leadId, {
@@ -406,10 +449,8 @@ exports.changeStatus = async (body, params) => {
     return {
       statusCode: statusCode.OK,
       success: true,
-      message:
-        resMessage.LEAD_STATUS_UPDATED || "Lead status updated successfully",
+      message: resMessage.LEAD_STATUS_UPDATED || "Lead status updated successfully",
       data: updatedLead,
-      dataTemp      
     };
   } catch (error) {
     return {
@@ -419,100 +460,6 @@ exports.changeStatus = async (body, params) => {
     };
   }
 };
-
-// exports.changeStatus = async (body, params) => {
-//   try {
-//     const { leadId } = params;
-//     const { statusId } = body;
-
-//     if (!leadId || !statusId) {
-//       return {
-//         statusCode: statusCode.BAD_REQUEST,
-//         success: false,
-//         message: "lead_id and status_id are required",
-//       };
-//     }
-
-//     // Check if the lead exists
-//     const leadData = await Lead.findByPk(leadId);
-//     if (!leadData) {
-//       return {
-//         statusCode: statusCode.NOT_FOUND,
-//         success: false,
-//         message: "Lead not found",
-//       };
-//     }
-
-//     // Check if the new status is valid
-//     const status = await LeadStatus.findByPk(statusId, {
-//       include: [{ model: LeadStage, as: "stage" }],
-//     });
-//     if (!status) {
-//       return {
-//         statusCode: statusCode.NOT_FOUND,
-//         success: false,
-//         message: "Invalid status_id",
-//       };
-//     }
-
-//     // Workflow: check if this status has any workflow rules
-//     const workflowRule = await WorkflowRules.findOne({
-//       where: { Status_id: statusId },
-//     });
-
-//     // If a workflow rule with template exists: log the template, add/update queue
-//     if (workflowRule && workflowRule.action_data) {
-//       // Console the template
-//       console.log("Workflow Template for this status:", workflowRule.action_data);
-
-//       // Find if there is already an entry in the queue for this (lead, workflowRule)
-//       let queueEntry = await WorkFlowQueue.findOne({
-//         where: {
-//           lead_id: leadId,
-//           workflow_ruleID: workflowRule.id,
-//         }
-//       });
-
-//       if (queueEntry) {
-//         // Update the status to 'processing'
-//         await queueEntry.update({
-//           Status: 'executed',
-//           executed_At: null
-//         });
-//       } else {
-//         // Create an entry in queue with 'processing' status for this lead and workflow rule
-//         await WorkFlowQueue.create({
-//           lead_id: leadId,
-//           workflow_ruleID: workflowRule.id,
-//           Status: "processing"
-//         });
-//       }
-//     }
-
-//     // Update the lead with new status and stage
-//     await leadData.update({
-//       status_id: status.id,
-//       stage_id: status.stage_id,
-//     });
-
-//     const updatedLead = await Lead.findByPk(leadId, {
-//       include: [{ model: LeadStatus, as: "status" }],
-//     });
-
-//     return {
-//       statusCode: statusCode.OK,
-//       success: true,
-//       message: resMessage.LEAD_STATUS_UPDATED || "Lead status updated successfully",
-//       data: updatedLead,
-//     };
-//   } catch (error) {
-//     return {
-//       statusCode: statusCode.BAD_REQUEST,
-//       success: false,
-//       message: error.message,
-//     };
-//   }
-// };
 
 /**
  * Bulk upload leads from Excel file data.
@@ -535,11 +482,7 @@ exports.leadUpload = async (body) => {
     }
 
     // Build the absolute path to the uploaded file
-    const filePath = path.join(
-      __dirname,
-      "../../../public/uploads",
-      relativePath
-    );
+    const filePath = path.join(__dirname, "../../../public/uploads", relativePath);
 
     // Check if the file exists at the specified path
     if (!fs.existsSync(filePath)) {
@@ -569,22 +512,18 @@ exports.leadUpload = async (body) => {
     }
 
     // Fetch default status for newly uploaded leads
-    const defaultStatus = await LeadStatus.findOne({
-      where: { is_default: true },
-    });
+    const defaultStatus = await LeadStatus.findOne({ where: { is_default: true } });
 
     // Normalize keys: camelCase, trim
     const normalizeKey = (key) => {
       return key
-        .replace(/^\s+|\s+$/g, "") // Trim spaces
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, "_")
-        .replace(/^\w/, (c) => c.toLowerCase()); // Lowercase first char
+        .replace(/^\s+|\s+$/g, '') // Trim spaces
+        .toLowerCase().trim().replace(/\s+/g, "_")
+        .replace(/^\w/, c => c.toLowerCase()); // Lowercase first char
     };
 
     // Apply normalization for each lead object
-    leadsData = leadsData.map((obj) => {
+    leadsData = leadsData.map(obj => {
       const normalized = {};
       for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
@@ -624,6 +563,8 @@ exports.leadUpload = async (body) => {
     };
   }
 };
+
+
 
 exports.getStageStatusStructure = async () => {
   try {
