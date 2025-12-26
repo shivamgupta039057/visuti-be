@@ -173,6 +173,19 @@ exports.getChat = async ({ body }) => {
   }
 };
 
+exports.getTemplates = async ({ query }) => {
+  console.log("bodybodybodyddddddbodybody" , query);
+  try {
+    return await services.getTemplates(query);
+  } catch (error) {
+    return {
+      statusCode: statusCode.BAD_REQUEST,
+      success: false,
+      message: error.message,
+    };
+  }
+};
+
 exports.getMessagesByChatId = async ({ params }) => {
   try {
     return await services.getMessagesByChatId(params);

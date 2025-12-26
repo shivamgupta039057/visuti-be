@@ -72,6 +72,7 @@ const Lead = require("../../pgModels/lead");
 const WhatsappChat = require("../../pgModels/whatsapp/WhatsappChat");
 const WhatsappMessage = require("../../pgModels/whatsapp/WhatsappMessage");
 const API_URL = `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_ID}/messages`;
+const API_URL_TEMPLATE = `https://graph.facebook.com/v23.0/${process.env.WHATSAPP_BUSINESS_ACCOUNT_ID}/message_templates`;
 const { parsePhoneNumberFromString } = require('libphonenumber-js');
 
 
@@ -226,14 +227,54 @@ exports.sendTemplate = async ({ phone, template_name, language = "en_US", }) => 
 
 exports.getChat = async () => {
   try {
-    const chat = await WhatsappChat.findAll({
+    // Find all chats with newest first, include Lead info if available for each chat's lead_id
+    const chats = await WhatsappChat.findAll({
       order: [["updatedAt", "DESC"]],
+      include: [
+        {
+          model: require("../../pgModels/lead"),
+          as: "lead", // You may need to set up the association for this to work!
+        },
+      ],
     });
 
     return {
       statusCode: 200,
       success: true,
-      data: chat
+      data: chats
+    };
+
+  } catch (error) {
+    return {
+      statusCode: 400,
+      success: false,
+      message: error.message
+    };
+  }
+};
+
+
+exports.getTemplates = async (query) => {
+  console.log("ddddddddddddddddddddddddddddddddddd" , query);
+  
+  try {
+    const response = await axios.get(
+      API_URL_TEMPLATE,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    console.log("`responseresponseresponse`" , response.data);
+    
+
+    return {
+      statusCode: 200,
+      success: true,
+      data: response.data
     };
 
   } catch (error) {

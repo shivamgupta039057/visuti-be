@@ -20,7 +20,7 @@ exports.addLead = async (body) => {
   console.log("sdssadsasdsbodybodybodybody", body);
 
   try {
-    const { data, source, assignedTo, notes } = body;
+    const { data, source, assignedTo, notes , name , whatsapp_number } = body;
 
     const status = await LeadStatus.findOne({ where: { is_default: true } });
 
@@ -32,6 +32,8 @@ exports.addLead = async (body) => {
       source,
       status_id: status ? status.id : null,
       notes,
+      name,
+      whatsapp_number
     });
 
           const workflowRule = await WorkflowRules.findOne({
