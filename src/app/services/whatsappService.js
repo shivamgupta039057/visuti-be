@@ -1,72 +1,3 @@
-
-// import axios from "axios";
-// import dotenv from "dotenv";
-// dotenv.config();
-
-// const API_VERSION = "v17.0"; // update if Meta requires newer version
-// const phoneId = process.env.WHATSAPP_PHONE_ID;
-// const token = process.env.WHATSAPP_TOKEN;
-// const BASE = `https://graph.facebook.com/${API_VERSION}/${phoneId}`;
-
-// /**
-//  * Create a new workflow rule.
-//  *
-//  * @param {object} body - The workflow rule details { Status_id, ActionType, action_data, Delay, isActive }
-//  * @returns {object} - An object containing the status code, success flag, message, and created workflow rule data.
-//  * @throws Will throw an error if there is a database error.
-//  */
-// exports.sendTemplateMessage = async ({ to, templateName, templateComponents = [], language = "en_US" }) => {
-//   try {
-//     const payload = {
-//       messaging_product: "whatsapp",
-//       to,
-//       type: "template",
-//       template: {
-//         name: templateName,
-//         language: { code: language },
-//         components: templateComponents
-//       }
-//     };
-
-//     const resp = await axios.post(`${BASE}/messages`, payload, {
-//       headers: { Authorization: `Bearer ${token}` }
-//     });
-
-//     return {
-//       success: true,
-//       data: resp.data
-//     };
-//   } catch (error) {
-//     return {
-//       success: false,
-//       message: error.response?.data || error.message
-//     };
-//   }
-// };
-
-
-// export async function sendTextMessage(to, text) {
-//   const body = {
-//     messaging_product: "whatsapp",
-//     to,
-//     type: "text",
-//     text: { body: text }
-//   };
-
-//   try {
-//     const resp = await axios.post(`${BASE}/messages`, body, {
-//       headers: { Authorization: `Bearer ${token}` }
-//     });
-//     return resp.data;
-//   } catch (err) {
-//     const errInfo = err.response?.data || err.message;
-//     throw new Error(JSON.stringify(errInfo));
-//   }
-// }
-
-
-
-
 const axios = require("axios");
 const Lead = require("../../pgModels/lead");
 const WhatsappChat = require("../../pgModels/whatsapp/WhatsappChat");
@@ -75,15 +6,36 @@ const API_URL = `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_I
 const API_URL_TEMPLATE = `https://graph.facebook.com/v23.0/${process.env.WHATSAPP_BUSINESS_ACCOUNT_ID}/message_templates`;
 const { parsePhoneNumberFromString } = require('libphonenumber-js');
 
+// Import socket.io instance for real-time messaging
+let io;
+try {
+    const socketModule = require('../../../socket');
+    io = socketModule.io; // io is attached to the server object
+} catch (error) {
+    console.warn('Socket.io not available:', error.message);
+}
+
 
 exports.handleIncomingMessage = async (payload) => {
   const message = payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
-  if (!message) return;
+  if (!message) {
+    return {
+      statusCode: 200,
+      success: true,
+      message: 'No message found in payload'
+    };
+  }
 
    const exists = await WhatsappMessage.findOne({
     where: { meta_message_id: message.id }
   });
-  if (exists) return;
+  if (exists) {
+    return {
+      statusCode: 200,
+      success: true,
+      message: 'Message already processed'
+    };
+  }
   
 
   const phone = message.from;
@@ -121,7 +73,7 @@ exports.handleIncomingMessage = async (payload) => {
   }
 
   // 3️⃣ Save message
-  await WhatsappMessage.create({
+  const savedMessage = await WhatsappMessage.create({
     chat_id: chat.id,
     direction: "IN",
     message_type: "text",
@@ -134,6 +86,36 @@ exports.handleIncomingMessage = async (payload) => {
     last_message_at: new Date(),
     is_24h_active: true
   });
+
+  // 5️⃣ Emit socket event for real-time message display
+  if (io) {
+    const messageData = {
+      id: savedMessage.id,
+      chat_id: chat.id,
+      direction: savedMessage.direction,
+      message_type: savedMessage.message_type,
+      content: savedMessage.content,
+      createdAt: savedMessage.createdAt,
+      updatedAt: savedMessage.updatedAt
+    };
+    io.to(`${chat.id}`).emit('newMessage', messageData);
+    // Also emit to update chat list
+    // io.emit('chatUpdated', {
+    //   chat_id: chat.id,
+    //   last_message_at: chat.last_message_at,
+    //   unread_count: chat.unread_count || 0
+    // });
+  }
+
+  return {
+    statusCode: 200,
+    success: true,
+    message: 'Message received and processed',
+    data: {
+      chat_id: chat.id,
+      message_id: savedMessage.id
+    }
+  };
 };
 
 
@@ -159,7 +141,7 @@ exports.sendText = async ({ phone, text }) => {
         }
       }
     );
-   await WhatsappMessage.create({
+   const savedMessage = await WhatsappMessage.create({
       chat_id: chat.id,
       direction: "OUT",
       message_type: "text",
@@ -173,6 +155,25 @@ exports.sendText = async ({ phone, text }) => {
       is_24h_active: true
     });
 
+    // 5️⃣ Emit socket event for real-time message display
+    if (io) {
+      const messageData = {
+        id: savedMessage.id,
+        chat_id: chat.id,
+        direction: savedMessage.direction,
+        message_type: savedMessage.message_type,
+        content: savedMessage.content,
+        createdAt: savedMessage.createdAt,
+        updatedAt: savedMessage.updatedAt
+      };
+      io.to(`${chat.id}`).emit('newMessage', messageData);
+      // Also emit to update chat list
+      // io.emit('chatUpdated', {
+      //   chat_id: chat.id,
+      //   last_message_at: chat.last_message_at,
+      //   unread_count: chat.unread_count || 0
+      // });
+    }
     
     return response.data;
   } catch (error) {
@@ -202,7 +203,7 @@ exports.sendTemplate = async ({ phone, template_name, language = "en_US", }) => 
         }
       }
     );
-    await WhatsappMessage.create({
+    const savedMessage = await WhatsappMessage.create({
       chat_id: chat.id,
       direction: "OUT",
       message_type: "template",
@@ -214,6 +215,26 @@ exports.sendTemplate = async ({ phone, template_name, language = "en_US", }) => 
       last_message_at: new Date(),
       is_24h_active: true
     });
+
+    // Emit socket event for real-time message display
+    if (io) {
+      const messageData = {
+        id: savedMessage.id,
+        chat_id: chat.id,
+        direction: savedMessage.direction,
+        message_type: savedMessage.message_type,
+        content: savedMessage.content,
+        createdAt: savedMessage.createdAt,
+        updatedAt: savedMessage.updatedAt
+      };
+      io.to(`${chat.id}`).emit('newMessage', messageData);
+      // Also emit to update chat list
+      // io.emit('chatUpdated', {
+      // //   chat_id: chat.id,
+      // //   last_message_at: chat.last_message_at,
+      // //   unread_count: chat.unread_count || 0
+      // });
+    }
 
     return response.data;
 

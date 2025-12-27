@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon index.js",
-    "admin": "nodemon admin.js",
+    "socket": "nodemon socket.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -27,6 +27,7 @@
     "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.7",
+    "socket.io": "^4.8.3",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

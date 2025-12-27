@@ -4,7 +4,6 @@ const app = express();
 const path = require('path');
 require('dotenv').config();
 const devConfig = require('./src/config/dev.config');
-// require('./src/config/db.config');
 const { connectPostgres,sequelize } = require('./src/config/postgres.config');
 const {initDB}=require('./src/pgModels/index')
 global.c = console.log.bind(console);
@@ -30,12 +29,11 @@ app.use((err, req, res, next) => {
     return res.status(400).json({ status: false, message: "Error In Request", data: [] })
 })
 
-const PORT = devConfig.PORT || 6262;
+const PORT = devConfig.PORT || 6060;
 
 
 app.listen(PORT, async () => {
     console.log(`Server is running on ${PORT}`);
-
 
     // try {
     //     const url = await ngrok.connect(PORT);
