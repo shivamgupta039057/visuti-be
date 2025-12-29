@@ -5,18 +5,28 @@ const WhatsappMessage = require("../../pgModels/whatsapp/WhatsappMessage");
 const API_URL = `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_ID}/messages`;
 const API_URL_TEMPLATE = `https://graph.facebook.com/v23.0/${process.env.WHATSAPP_BUSINESS_ACCOUNT_ID}/message_templates`;
 const { parsePhoneNumberFromString } = require('libphonenumber-js');
-
+const { BroadcastLog } = require("../../pgModels/index");
 // Import socket.io instance for real-time messaging
 let io;
 try {
-    const socketModule = require('../../../socket');
-    io = socketModule.io; // io is attached to the server object
+    const { getIO }  = require('../sockets/socketIntance');
+    io = getIO(); // io is attached to the server object
 } catch (error) {
     console.warn('Socket.io not available:', error.message);
 }
 
 
 exports.handleIncomingMessage = async (payload) => {
+
+
+ const { statuses } = payload.entry[0].changes[0].value;
+   for (const s of statuses) {
+    await BroadcastLog.create({
+      phone: s.recipient_id,
+      status: s.status,
+      meta_response: s
+    });
+  }
   const message = payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
   if (!message) {
     return {
@@ -184,6 +194,7 @@ exports.sendText = async ({ phone, text }) => {
 
 exports.sendTemplate = async ({ phone, template_name, language = "en_US", }) => {
   try {
+
   const chat = await getOrCreateChat(phone);
     const response = await axios.post(
       API_URL,
@@ -333,13 +344,16 @@ exports.getMessagesByChatId = async (params) => {
 
 
 async function getOrCreateChat(phone) {
+
     const numberMatch = phone.match(/\d+/);
   let whatsapp_number
   if (numberMatch) {
     const phoneNumber = parsePhoneNumberFromString(`+${numberMatch[0]}`);
     whatsapp_number = phoneNumber.nationalNumber
   }
+
   let lead = await Lead.findOne({ where: { whatsapp_number } });
+
 
   if (!lead) {
     lead = await Lead.create({
@@ -351,6 +365,8 @@ async function getOrCreateChat(phone) {
   let chat = await WhatsappChat.findOne({
     where: { phone: whatsapp_number }
   });
+
+  console.log(chat,"chhhhhhh")
 
   if (!chat) {
     chat = await WhatsappChat.create({
