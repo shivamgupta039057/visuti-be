@@ -5,6 +5,7 @@ const WhatsappMessage = require("../../pgModels/whatsapp/WhatsappMessage");
 const API_URL = `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_ID}/messages`;
 const API_URL_TEMPLATE = `https://graph.facebook.com/v23.0/${process.env.WHATSAPP_BUSINESS_ACCOUNT_ID}/message_templates`;
 const { parsePhoneNumberFromString } = require('libphonenumber-js');
+const { buildTemplatePayload } = require("../../utils/buildTemplatePayload");
 
 // Import socket.io instance for real-time messaging
 let io;
@@ -182,7 +183,7 @@ exports.sendText = async ({ phone, text }) => {
   }
 };
 
-exports.sendTemplate = async ({ phone, template_name, language = "en_US", }) => {
+exports.sendTemplate = async ({ phone, template_name, language = "en", }) => {
   try {
   const chat = await getOrCreateChat(phone);
     const response = await axios.post(
@@ -365,3 +366,33 @@ async function getOrCreateChat(phone) {
 }
 
 
+
+
+exports.createTemplate = async (req, res) => {
+  try {
+    const payload = buildTemplatePayload(req.body);
+
+    console.log("ssssssssssspayloadpayloadpayload" , payload);
+
+    const response = await axios.post(
+      API_URL_TEMPLATE,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    return res.json({
+      success: true,
+      data: response.data
+    });
+  } catch (err) {
+    return res.status(400).json({
+      success: false,
+      error: err.response?.data || err.message
+    });
+  }
+};

@@ -8,6 +8,8 @@ const upload = require('../../helper/multer');
 const { uploadFile } = require("../../helper/fileUploader");
 
 router.post('/upload-media', upload.single('image'), uploadFile, responseHandler(controller.uploadMedia));
+router.get('/get-media', responseHandler(controller.getMedia));
+
 
 
 

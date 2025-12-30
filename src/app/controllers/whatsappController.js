@@ -198,3 +198,16 @@ exports.getMessagesByChatId = async ({ params }) => {
   }
 };
 
+exports.createTemplate = async (req, res) => {
+  console.log("dddddddbodybodybodybody" , req.body);
+  
+  try {
+    return await services.createTemplate(req, res);
+  } catch (error) {
+    return {
+      statusCode: statusCode.BAD_REQUEST,
+      success: false,
+      message: error.message,
+    };
+  }
+};

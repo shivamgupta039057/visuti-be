@@ -4,15 +4,26 @@ const WhatsappChat = require("../../pgModels/whatsapp/WhatsappChat");
 const WhatsappMessage = require("../../pgModels/whatsapp/WhatsappMessage");
 const MediaLibrary = require("../../pgModels/MediaLibrary");
 
+const getMediaType = (mime) => {
+  if (mime.startsWith("image")) return "image";
+  if (mime.startsWith("video")) return "video";
+  if (mime.startsWith("audio")) return "audio";
+  return "document";
+};
 
 
-
-exports.uploadMedia = async (body) => {
+exports.uploadMediaService = async (file, body, user) => {
   try {
-    console.log("ddddddddddddddbodybodybodybodybodybodybodybody" , body);
-    ddddd
-    // Create a new banner according to the BannerModel schema
-    const file = req.file;
+    if (!file) {
+      return {
+        statusCode: 400,
+        success: false,
+        message: "File is required"
+      };
+    }
+
+    console.log("file, body, userfile, body, userfile, body, user" , file, body, user);
+    
 
     const media = await MediaLibrary.create({
       original_name: file.originalname,
@@ -20,24 +31,56 @@ exports.uploadMedia = async (body) => {
       media_type: getMediaType(file.mimetype),
       mime_type: file.mimetype,
       file_size: file.size,
-      file_url: `/uploads/${file.filename}`,
-      uploaded_by: req.user?.id || null,
+      file_url: `/uploads/${body.image}`, // path added by middleware
+      uploaded_by: user?.id || null
     });
 
     return {
-      statusCode: statusCode.OK,
+      statusCode: 200,
       success: true,
-      message: resMessage.Add_Banner_Data || "Banner added successfully",
-      data: newBanner,
+      message: "Media uploaded successfully",
+      data: media
     };
+
   } catch (error) {
     return {
-      statusCode: statusCode.BAD_REQUEST,
+      statusCode: 400,
       success: false,
-      message: error.message,
+      message: error.message
     };
   }
 };
+
+
+exports.getMediaService = async (query) => {
+  try {
+    let condition = {};
+
+    if (query.type) {
+      condition.media_type = query.type;
+    }
+
+    const media = await MediaLibrary.findAll({
+      where: condition
+    });
+
+    return {
+      statusCode: 200,
+      success: true,
+      message: "Media retrieved successfully",
+      data: media
+    };
+
+  } catch (error) {
+    return {
+      statusCode: 400,
+      success: false,
+      message: error.message
+    };
+  }
+};
+
+
 
 
 
