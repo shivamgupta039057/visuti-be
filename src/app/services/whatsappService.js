@@ -9,12 +9,8 @@ const { BroadcastLog } = require("../../pgModels/index");
 // Import socket.io instance for real-time messaging
 let io;
 console.log("process.env.WHATSAPP_PHONE_ID" , process.env.WHATSAPP_PHONE_ID);
-try {
-    const { getIO }  = require('../sockets/socketIntance');
-    io = getIO(); // io is attached to the server object
-} catch (error) {
-    console.warn('Socket.io not available:', error.message);
-}
+const { getIO }  = require('../sockets/socketIntance');
+io = getIO(); // Returns null if not initialized (e.g., in worker processes)
 
 
 exports.handleIncomingMessage = async (payload) => {
@@ -109,13 +105,15 @@ exports.handleIncomingMessage = async (payload) => {
       createdAt: savedMessage.createdAt,
       updatedAt: savedMessage.updatedAt
     };
-    io.to(`${chat.id}`).emit('newMessage', messageData);
-    // Also emit to update chat list
-    // io.emit('chatUpdated', {
-    //   chat_id: chat.id,
-    //   last_message_at: chat.last_message_at,
-    //   unread_count: chat.unread_count || 0
-    // });
+    if (io) {
+      io.to(`${chat.id}`).emit('newMessage', messageData);
+      // Also emit to update chat list
+      // io.emit('chatUpdated', {
+      //   chat_id: chat.id,
+      //   last_message_at: chat.last_message_at,
+      //   unread_count: chat.unread_count || 0
+      // });
+    }
   }
 
   return {
