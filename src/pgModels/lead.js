@@ -1,8 +1,10 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/postgres.config");
+
 const LeadStage = require("./LeadStages/LeadStage");
 const LeadStatus = require("./LeadStages/leadStatus");
 const LeadReason = require("./LeadStages/leadReason");
+const User = require("./userModel");
 
 const Lead = sequelize.define(
   "Lead",
@@ -29,8 +31,12 @@ const Lead = sequelize.define(
       allowNull: true,
     },
     assignedTo: {
-      type: DataTypes.STRING, // Counselor ID or Name
+      type: DataTypes.INTEGER, // User ID
       allowNull: true,
+      references: {
+        model: User,
+        key: "id",
+      },
     },
     stage_id: {
       type: DataTypes.INTEGER,
@@ -61,8 +67,12 @@ const Lead = sequelize.define(
       allowNull: true,
     },
     created_by: {
-      type: DataTypes.STRING, // admin/user ID who created this lead
+      type: DataTypes.INTEGER, // admin/user ID who created this lead
       allowNull: true,
+      references: {
+        model: User,
+        key: "id",
+      },
     },
   },
   {
@@ -71,8 +81,13 @@ const Lead = sequelize.define(
   }
 );
 
+
 Lead.belongsTo(LeadStage, { foreignKey: "stage_id", as: "stage" });
 Lead.belongsTo(LeadStatus, { foreignKey: "status_id", as: "status" });
 Lead.belongsTo(LeadReason, { foreignKey: "reason_id", as: "reason" });
+Lead.belongsTo(User, { foreignKey: "assignedTo", as: "assignedUser" });
+Lead.belongsTo(User, { foreignKey: "created_by", as: "creator" });
+User.hasMany(Lead, { foreignKey: "assignedTo", as: "assignedLeads" });
+User.hasMany(Lead, { foreignKey: "created_by", as: "createdLeads" });
 
 module.exports = Lead;

@@ -1,3 +1,4 @@
+
 const { statusCode, resMessage } = require("../../config/default.json");
 const Lead = require("../../pgModels/lead");
 const { Op } = require("sequelize");
@@ -16,28 +17,30 @@ const fs = require('fs');
  * @returns {object} - An object containing the status code, success flag, message, and home page data.
  * @throws Will throw an error if there is a database error.
  */
-exports.addLead = async (body) => {
+exports.addLead = async (body, user) => {
   console.log("sdssadsasdsbodybodybodybody", body);
 
   try {
-    const { data, source, assignedTo, notes , name , whatsapp_number } = body;
+    const { data, source, assignedTo, notes, name, whatsapp_number } = body;
 
     const status = await LeadStatus.findOne({ where: { is_default: true } });
 
     console.log("statusstatusstatusstatus", status);
 
-
+    // Assign the lead to the user who created it
     const lead = await Lead.create({
       data,
       source,
       status_id: status ? status.id : null,
       notes,
       name,
-      whatsapp_number
+      whatsapp_number,
+      assignedTo: user?.id || null,
+      created_by: user?.id || null
     });
 
-          const workflowRule = await WorkflowRules.findOne({
-        where: { type:"ManualLead" },
+    const workflowRule = await WorkflowRules.findOne({
+      where: { type: "ManualLead" },
       });
 
       if (workflowRule && workflowRule.action_data) {
@@ -343,14 +346,14 @@ exports.getAllLeads = async (query) => {
     const leads = await Lead.findAll({
       where: whereClause,
       attributes: {
-        exclude: ["assignedTo", "stage_id", "reason_id", "created_by"]
+        exclude: ["stage_id", "reason_id", "created_by"]
       },
       include: [
-        { model: LeadStatus, as: "status", attributes: ["name", "color"] }
+        { model: LeadStatus, as: "status", attributes: ["name", "color"] },
+        { model: require("../../pgModels/userModel"), as: "assignedUser", attributes: ["id", "name", "email"] }
       ],
       order: [["createdAt", "DESC"]],
     });
-
 
     return {
       success: true,
@@ -609,4 +612,73 @@ exports.getStageStatusStructure = async () => {
       message: error.message,
     };
   }
+};
+
+
+
+// Bulk assign leads to users by percentage
+exports.bulkAssignLeads = async (body) => {
+  // body: { leadIds: [1,2,3,4], userIds: [10,11], percentages: [60,40] }
+  const { leadIds, userIds, percentages } = body;
+  if (!Array.isArray(leadIds) || !Array.isArray(userIds) || !Array.isArray(percentages)) {
+    return {
+      statusCode: statusCode.BAD_REQUEST,
+      success: false,
+      message: "leadIds, userIds, and percentages must be arrays",
+    };
+  }
+  if (userIds.length !== percentages.length) {
+    return {
+      statusCode: statusCode.BAD_REQUEST,
+      success: false,
+      message: "userIds and percentages must have the same length",
+    };
+  }
+  if (percentages.reduce((a, b) => a + b, 0) !== 100) {
+    return {
+      statusCode: statusCode.BAD_REQUEST,
+      success: false,
+      message: "Percentages must sum to 100",
+    };
+  }
+  // Calculate how many leads per user
+  const totalLeads = leadIds.length;
+  console.log("Total leads to assign:", totalLeads);
+  let counts = percentages.map(p => Math.floor((p / 100) * totalLeads));
+  // Distribute any remainder
+  let assigned = counts.reduce((a, b) => a + b, 0);
+  console.log("Initial assigned leads:", assigned);
+  let remainder = totalLeads - assigned;
+
+  console.log("Initial counts:", counts, "Remainder:", remainder);
+  for (let i = 0; remainder > 0 && i < counts.length; i++, remainder--) {
+    counts[i]++;
+  }
+  // Assign leads
+  let updates = [];
+  let leadIndex = 0;
+  const assignmentMap = {};
+  for (let i = 0; i < userIds.length; i++) {
+    assignmentMap[userIds[i]] = [];
+    for (let j = 0; j < counts[i]; j++) {
+      if (leadIndex < leadIds.length) {
+        updates.push(
+          Lead.update({ assignedTo: userIds[i] }, { where: { id: leadIds[leadIndex] } })
+        );
+        assignmentMap[userIds[i]].push(leadIds[leadIndex]);
+        leadIndex++;
+      }
+    }
+  }
+  await Promise.all(updates);
+  // Console output for assignment
+  Object.entries(assignmentMap).forEach(([userId, leads]) => {
+    console.log(`User ${userId} assigned leads: [${leads.join(", ")}] (Total: ${leads.length})`);
+  });
+  return {
+    statusCode: statusCode.OK,
+    success: true,
+    message: "Leads assigned successfully",
+    assignment: assignmentMap
+  };
 };
